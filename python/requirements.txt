@@ -1,5 +1,5 @@
-# Day 2 installs these. Versions stay unpinned until the AKShare smoke test.
-akshare
-pandas
-numpy
-pytest
+akshare==1.19.1
+pandas==3.0.6
+numpy==2.5.4
+pytest==9.1.1
+httpx==0.28.1

@@ -1,0 +1,23 @@
+{
+  "dataset": "demo-20261021",
+  "provider": "akshare",
+  "akshare_version": "1.19.1",
+  "akshare_interfaces": [
+    "stock_zh_a_hist_tx",
+    "stock_zh_a_hist_tx",
+    "sina_market_center_amount_page"
+  ],
+  "bar_backend": "tencent",
+  "index_backend": "tencent",
+  "spot_scope": "sina_amount_page",
+  "captured_at": "2026-10-21T23:28:56+08:00",
+  "data_date": "2026-10-21",
+  "adjustment": "qfq",
+  "volume_unit": "股",
+  "volume_note": "AKShare stock_zh_a_hist_tx 的成交量单位是股。量比在同一单位内计算。",
+  "universe": "demo",
+  "symbols": 150,
+  "failed_symbols": [],
+  "is_live": false,
+  "note": "截至该交易日收盘的历史样本，不是实时行情"
+}

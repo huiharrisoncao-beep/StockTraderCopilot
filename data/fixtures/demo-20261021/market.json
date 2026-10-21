@@ -1,0 +1,32 @@
+{
+  "data_date": "2026-10-21",
+  "indices": [
+    {
+      "code": "000001",
+      "name": "上证指数",
+      "close": 3713.03,
+      "change_pct": -0.005981,
+      "amount": 642751560400.0
+    },
+    {
+      "code": "399001",
+      "name": "深证成指",
+      "close": 11704.35,
+      "change_pct": -0.008214,
+      "amount": 786596915400.0
+    },
+    {
+      "code": "399006",
+      "name": "创业板指",
+      "close": 2694.71,
+      "change_pct": -0.016242,
+      "amount": 397964034000.0
+    }
+  ],
+  "advance_count": 91,
+  "decline_count": 58,
+  "flat_count": 1,
+  "breadth_scope": "demo_universe",
+  "spot_scope": "sina_amount_page",
+  "breadth_note": "涨跌家数来自抓取时的 AKShare 行情快照，不是指数官方统计。"
+}

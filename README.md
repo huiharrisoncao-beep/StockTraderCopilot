@@ -73,10 +73,30 @@ ping_research {"note":"ping once as requested"}
 
 Skill 在 [.dsh/skills/daily-stock-research/SKILL.md](.dsh/skills/daily-stock-research/SKILL.md)，目前 `disable-model-invocation: true`。行情工具还没接，不能让模型按半成品流程执行。
 
-Python 包只是骨架。Day 2 再安装依赖。现在可以这样确认入口：
+## Day 2 数据与筛选
+
+依赖已冻结在 [python/requirements.txt](python/requirements.txt)。本机曾把 `HTTP_PROXY` 指到 `127.0.0.1:10808`，`requests` 会被重置，而 `curl` / `httpx` 可以读到东方财富。AKShare 仍负责 URL、参数和列名；[python/trader/data/transport.py](python/trader/data/transport.py) 只替换传输，并把不稳定的 `48.push2` 改写到已核对的 `82.push2`。
+
+2026-10-21 核对过的接口：
+
+| 用途 | 函数 | 备注 |
+|---|---|---|
+| 前复权日线 | `ak.stock_zh_a_hist(..., adjust="qfq")` | 成交量单位是手 |
+| 指数日线 | `ak.stock_zh_index_daily_em` | `sh000001`、`sz399001`、`sz399006` |
+| 股票池 | `ak.stock_zh_a_spot_em` | 全市场分页或 `push2` 不通时，改用新浪按成交额排序的页面 |
+| 日线回退 | `ak.stock_zh_a_hist_tx` | `push2his` 断开时使用。成交量单位是股，量比仍在同一单位内计算 |
+
+`daily` 只读 fixture，不访问网络。现场抓取用 `freeze-fixture`，成功后再把 `data/fixtures/current.json` 指向新样本。
 
 ```sh
-PYTHONPATH=python python3 -m trader.cli
+cd /Users/harrisoncao/Workspace/StockTraderCopilot
+python3 -m venv .venv
+.venv/bin/pip install -r python/requirements.txt
+PYTHONPATH=python .venv/bin/python -m trader.cli freeze-fixture --limit 150 --json
+PYTHONPATH=python .venv/bin/python -m trader.cli daily --universe demo --data-mode fixture --json
+PYTHONPATH=python .venv/bin/python -m pytest tests -q
 ```
 
-它会以非零状态退出，并说明 CLI 尚未实现。
+规则集是 `trend_volume_v1`。没有候选时 `ok` 仍为 `true`，`error` 为 `null`。`csi300` 在 Day 2 返回 `INVALID_ARGUMENT`。涨跌家数来自快照，不是交易所官方统计。
+
+2026-10-21 23:30 冻结的样本是 [data/fixtures/demo-20261021](data/fixtures/demo-20261021)。当时东方财富 `push2` / `push2his` 断开，所以 manifest 记录的实际接口是 `stock_zh_a_hist_tx` 和一页新浪成交额排序。150 只股票全部抓到，最后交易日 `2026-10-21`，上证收盘 `3713.03`。成交量单位是股。连续两次 `daily` 的前十代码和顺序一致，第一条是 `300031`。涨跌家数范围是 `demo_universe`，不是全市场。
