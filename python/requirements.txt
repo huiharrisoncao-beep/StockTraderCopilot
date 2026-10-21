@@ -1,0 +1,5 @@
+# Day 2 installs these. Versions stay unpinned until the AKShare smoke test.
+akshare
+pandas
+numpy
+pytest

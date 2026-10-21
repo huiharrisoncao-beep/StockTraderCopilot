@@ -1,0 +1,11 @@
+# Appended to ~/.dsh/profiles/trading-research/cordis.patch.yml.
+# A bare id overrides an existing row. A new plugin must be inserted.
+- insert:
+    - id: stock-research
+      name: "@stock-trader/dsh-plugin"
+      config:
+        python: "python3"
+        module: "trader.cli"
+        projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
+        dataMode: "fixture"
+        timeoutMs: 120000

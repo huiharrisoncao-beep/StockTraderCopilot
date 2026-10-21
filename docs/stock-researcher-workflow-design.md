@@ -281,15 +281,18 @@ export function apply(ctx, config) {
 配置走插件 config，不把仓库绝对路径写死在源码里：
 
 ```yaml
-- id: stock-research
-  name: "@stock-trader/dsh-plugin"
-  config:
-    python: "python3"
-    module: "trader.cli"
-    projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
-    dataMode: "fixture"
-    timeoutMs: 120000
+- insert:
+    - id: stock-research
+      name: "@stock-trader/dsh-plugin"
+      config:
+        python: "python3"
+        module: "trader.cli"
+        projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
+        dataMode: "fixture"
+        timeoutMs: 120000
 ```
+
+裸写 `- id: stock-research` 会被当成覆盖已有行。本机 `0.2.1-rc.2` 对不存在的 id 报 `entry "stock-research" not found`，不会创建插件。新插件必须放在 `- insert:` 下。
 
 `dataMode` 演示当天默认 `fixture`。现场网络确认可用后，再在设置或 patch 里改成 `live`。不要在演示前五分钟改默认值。
 
@@ -817,6 +820,8 @@ dsh plugin --profile trading-research add /absolute/path/to/harness/plugins/stoc
 5. 插件先注册一个无业务意义的 `ping_research`，返回 `{ "ok": true, "tool": "ping_research" }`。在 Web UI 里让 Agent 调用它。成功后再删掉或留作健康检查。
 
 验收：Profile 能启动；dump 里能看到插件；Agent 能调用 `ping_research`。
+
+2026-10-21 实测记录见 [README.md](../README.md)。安装命令接受本地绝对路径，并写成 `link:` 依赖；该包没有 `dsh.bundle`，所以还要把上面的 `insert` 行写入 Profile 的 `cordis.patch.yml`。从 `web` 模板新建的 Profile 只带 `dsh-base` 和 `dsh-web-app`，不含当前日常 `web` Profile 里后装的市场 bundle。
 
 ### Day 2 · 10 月 22 日 · 数据与量化
 
