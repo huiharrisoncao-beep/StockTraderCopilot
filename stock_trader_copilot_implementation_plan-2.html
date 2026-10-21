@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Trader Copilot｜下周一演示实施计划</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --text: #182230;
+      --muted: #617084;
+      --primary: #2457d6;
+      --primary-soft: #eaf0ff;
+      --border: #e1e7f0;
+      --green: #16794b;
+      --orange: #a75b00;
+      --shadow: 0 10px 30px rgba(23, 42, 77, .07);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .hero {
+      padding: 58px 24px 48px;
+      color: white;
+      background: linear-gradient(130deg, #152d63, #2457d6 65%, #5284ee);
+    }
+    .hero-inner, main, footer { max-width: 1060px; margin: 0 auto; }
+    .eyebrow { opacity: .8; letter-spacing: .12em; font-size: .82rem; text-transform: uppercase; }
+    h1 { margin: 10px 0 12px; line-height: 1.2; font-size: clamp(2rem, 5vw, 3.2rem); }
+    .hero p { max-width: 760px; margin: 0; font-size: 1.08rem; opacity: .94; }
+    .badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+    .badge { padding: 5px 11px; border: 1px solid rgba(255,255,255,.35); border-radius: 99px; font-size: .85rem; }
+    main { padding: 28px 20px 60px; }
+    section, .callout {
+      margin: 20px 0;
+      padding: 25px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    h2 { margin: 0 0 16px; font-size: 1.55rem; line-height: 1.35; }
+    h3 { margin: 22px 0 8px; font-size: 1.12rem; }
+    p { margin: 9px 0; }
+    .muted { color: var(--muted); }
+    .lead { font-size: 1.08rem; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #fff; }
+    .card h3 { margin: 0 0 7px; }
+    .tag { display: inline-block; font-size: .78rem; border-radius: 6px; padding: 2px 7px; background: var(--primary-soft); color: var(--primary); margin-bottom: 8px; }
+    pre {
+      overflow-x: auto; padding: 16px; border-radius: 10px;
+      background: #101827; color: #e5edf9; font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    :not(pre) > code { background: #eef2f8; border-radius: 5px; padding: 2px 5px; font-size: .9em; }
+    .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0; }
+    .flow span { padding: 8px 12px; border-radius: 8px; background: var(--primary-soft); color: #2148a8; font-weight: 600; }
+    .flow b { color: #8995a7; }
+    .checklist { list-style: none; padding: 0; margin: 8px 0; }
+    .checklist li { position: relative; padding: 7px 8px 7px 32px; border-bottom: 1px dashed var(--border); }
+    .checklist li:last-child { border-bottom: 0; }
+    .checklist li::before { content: "□"; position: absolute; left: 5px; top: 6px; font-size: 1.15rem; color: var(--primary); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .94rem; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #f2f5fb; font-weight: 700; }
+    .callout { border-left: 5px solid var(--primary); }
+    .callout.warning { border-left-color: #d97706; background: #fffaf2; }
+    .callout.success { border-left-color: var(--green); background: #f4fbf7; }
+    .day { border-left: 3px solid #c7d6ff; padding-left: 17px; margin: 20px 0; }
+    .day h3 { margin-top: 0; }
+    .day .date { color: var(--primary); font-weight: 700; }
+    .small { font-size: .9rem; }
+    .topnav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .topnav a { color: white; text-decoration: none; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+    footer { padding: 0 20px 35px; color: var(--muted); font-size: .88rem; }
+    @media (max-width: 700px) {
+      .grid, .grid.three { grid-template-columns: 1fr; }
+      .hero { padding: 40px 20px 32px; }
+      section, .callout { padding: 19px; }
+      main { padding: 16px 12px 40px; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: white; }
+      .hero { background: #2457d6 !important; print-color-adjust: exact; }
+      section, .callout { box-shadow: none; break-inside: avoid; }
+      .topnav { display: none; }
+    }
+  </style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Implementation Plan · Demo Edition</div>
+    <h1>Stock Trader Copilot</h1>
+    <p>基于 DeepSeek Harness 的 A 股智能交易研究工作流：在有限时间内，交付一个真实可运行、结果可追溯、现场可演示的 MVP。</p>
+    <div class="badges">
+      <span class="badge">演示日期：2026 年 10 月 26 日（星期一）</span>
+      <span class="badge">核心目标：跑通端到端工作流</span>
+      <span class="badge">不接入实盘自动下单</span>
+    </div>
+    <nav class="topnav">
+      <a href="#goal">演示目标</a>
+      <a href="#architecture">架构设计</a>
+      <a href="#schedule">行动计划</a>
+      <a href="#acceptance">验收标准</a>
+      <a href="#demo">演示流程</a>
+      <a href="#start">立即开始</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="goal">
+    <h2>一、项目目标：先完成一个闭环</h2>
+    <p class="lead"><strong>AI Trader Operating System</strong>：辅助交易员完成市场分析、量化选股、个股研究、风险评估和盘后复盘，而不是让 AI 直接替人交易。</p>
+    <div class="flow" aria-label="工作流">
+      <span>市场环境分析</span><b>→</b><span>板块分析</span><b>→</b><span>量化选股</span><b>→</b><span>个股研究</span><b>→</b><span>风险检查</span><b>→</b><span>生成报告</span>
+    </div>
+    <div class="callout success">
+      <strong>本次演示的成功定义：</strong>通过一个入口启动工作流，获取或读取真实行情数据，完成基础指标计算和候选股筛选，再由 Harness 调用工具、让模型解释结果，最终生成 Markdown 报告和 JSON 结果。
+    </div>
+    <h3>设计原则</h3>
+    <ul>
+      <li><strong>Python 负责计算：</strong>均线、收益率、成交量指标、筛选和回测。</li>
+      <li><strong>Harness 负责编排：</strong>组织 Agent、工具调用和多步骤任务。</li>
+      <li><strong>大模型负责解释：</strong>总结市场信息、解释候选股筛选理由、整理研究报告。</li>
+      <li><strong>人负责最终决策：</strong>研究结果不是投资建议，也不直接触发交易。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>二、技术方案：先冻结，避免反复换技术</h2>
+    <table>
+      <thead><tr><th>模块</th><th>建议选择</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>Agent 运行框架</td><td>DeepSeek Harness</td><td>插件组合、工具调用、工作流执行</td></tr>
+        <tr><td>模型</td><td>DeepSeek API</td><td>解释和生成研究内容</td></tr>
+        <tr><td>行情数据</td><td>AKShare（先验证可用接口）</td><td>获取 A 股行情及相关数据</td></tr>
+        <tr><td>量化计算</td><td>Python、Pandas、NumPy</td><td>数据清洗、指标计算、筛选</td></tr>
+        <tr><td>本地存储</td><td>SQLite</td><td>保存行情、筛选结果和报告元数据</td></tr>
+        <tr><td>输出</td><td>Markdown、JSON</td><td>方便演示、检查和后续集成</td></tr>
+        <tr><td>版本管理</td><td>Git</td><td>管理代码与可重复的演示版本</td></tr>
+      </tbody>
+    </table>
+    <p class="muted small">SQLite 足以支撑演示，不必为了这次交付先部署 PostgreSQL。先检查现有 Harness 版本和插件 API，不要假设示例代码与本机接口完全一致。</p>
+  </section>
+
+  <section id="architecture">
+    <h2>三、DeepSeek Harness 架构映射</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">Profile</span>
+        <h3><code>trading-research</code></h3>
+        <p>定义这次运行模式，组合需要的 Bundle，并配置研究工作流。</p>
+      </div>
+      <div class="card">
+        <span class="tag">Bundle</span>
+        <h3>按职责组织配置</h3>
+        <p><code>trader-base</code>、<code>trader-market</code>、<code>trader-quant</code>。这些是项目拟创建的名称，不是官方预置 Bundle。</p>
+      </div>
+      <div class="card">
+        <span class="tag">Plugin</span>
+        <h3>暴露可调用能力</h3>
+        <p>先做少量工具：获取市场概况、筛选股票、获取个股研究数据、生成报告；不要为架构而堆砌插件。</p>
+      </div>
+      <div class="card">
+        <span class="tag">Context / Runtime</span>
+        <h3>协作与运行</h3>
+        <p>使用 Harness 自身的 Context 机制让插件注册服务、协作；Runtime 承载组装后的运行环境。业务数据通过明确的 JSON 输入输出传递。</p>
+      </div>
+    </div>
+    <h3>建议的业务目录</h3>
+    <pre>stock-trader-copilot/
+├── README.md
+├── .env.example
+├── .gitignore
+├── harness/
+│   ├── profiles/
+│   │   └── trading-research/
+│   ├── bundles/
+│   │   ├── trader-base/
+│   │   ├── trader-market/
+│   │   └── trader-quant/
+│   └── plugins/
+├── python/
+│   ├── requirements.txt
+│   └── trader/
+│       ├── data/
+│       ├── indicators/
+│       ├── screening/
+│       ├── research/
+│       ├── risk/
+│       └── reporting/
+├── data/
+│   ├── raw/
+│   └── processed/
+├── reports/
+└── tests/</pre>
+    <p class="muted small">这是建议的业务目录，不代表 Harness 强制要求采用这些路径。实际 Profile、Bundle、Patch 和插件结构以本机安装版本为准。</p>
+    <h3>首批业务工具</h3>
+    <table>
+      <thead><tr><th>工具名（项目自定义）</th><th>功能</th><th>优先级</th></tr></thead>
+      <tbody>
+        <tr><td><code>get_market_snapshot</code></td><td>返回市场概况和数据日期</td><td>P0</td></tr>
+        <tr><td><code>screen_stocks</code></td><td>计算指标并筛选候选股票</td><td>P0</td></tr>
+        <tr><td><code>get_stock_research_data</code></td><td>整理个股研究所需的数据</td><td>P1</td></tr>
+        <tr><td><code>generate_daily_report</code></td><td>生成 Markdown 和 JSON 报告</td><td>P0</td></tr>
+        <tr><td><code>run_backtest</code></td><td>验证规则的历史表现</td><td>P1，可独立先做</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="schedule">
+    <h2>四、从现在到演示日的行动计划</h2>
+    <div class="day">
+      <h3><span class="date">Day 1 · 10 月 21 日（周三）</span> — 项目骨架与 Harness 验证</h3>
+      <ul class="checklist">
+        <li>检查 Node.js、npm、Python、Git 及 Harness 版本。</li>
+        <li>阅读 CLI 帮助，确认 Profile、Bundle、Plugin 的真实配置结构。</li>
+        <li>运行可用的配置导出命令，观察最终配置树。</li>
+        <li>创建 Git 仓库和项目目录。</li>
+        <li>找到一个可复用的真实插件注册示例。</li>
+      </ul>
+      <p><strong>验收：</strong>确认本机版本、配置位置、插件注册方式和项目结构。</p>
+    </div>
+    <div class="day">
+      <h3><span class="date">Day 2 · 10 月 22 日（周四）</span> — 行情数据与量化核心</h3>
+      <ul class="checklist">
+        <li>验证 AKShare 的数据接口，获取股票列表和日线数据。</li>
+        <li>检查缺失值、重复日期、成交量异常、复权口径和数据日期。</li>
+        <li>计算 MA20、MA60、20 日收益率、成交量比率和阶段高点。</li>
+        <li>对可管理的 100–300 只股票进行初筛。</li>
+        <li>将行情与候选结果保存为 JSON，必要时存入 SQLite。</li>
+      </ul>
+      <p><strong>验收：</strong>一条 Python 命令能获取/读取行情、计算指标、输出候选股票。</p>
+    </div>
+    <div class="day">
+      <h3><span class="date">Day 3 · 10 月 23 日（周五）</span> — Harness 接入 Python 工具</h3>
+      <ul class="checklist">
+        <li>先让 Agent 调用 <code>get_market_snapshot</code>。</li>
+        <li>成功后接入 <code>screen_stocks</code>。</li>
+        <li>让模型根据工具返回的结构化结果解释市场和筛选理由。</li>
+        <li>约定统一的 JSON 返回格式和错误处理。</li>
+        <li>将多步骤任务串成最小 Workflow。</li>
+      </ul>
+      <p><strong>验收：</strong>从 Harness 发起任务，至少成功获取市场概况、筛选候选股并解释结果。</p>
+    </div>
+    <div class="day">
+      <h3><span class="date">Day 4 · 10 月 24 日（周六）</span> — 个股研究与报告</h3>
+      <ul class="checklist">
+        <li>从候选股中选取少量股票开展研究。</li>
+        <li>补充趋势、动量、成交量、所属行业、筛选原因和潜在风险。</li>
+        <li>生成 Markdown 研究报告和 JSON 结果。</li>
+        <li>标记数据来源、数据日期和缺失项。</li>
+      </ul>
+      <p><strong>验收：</strong>完整工作流能产出结构清晰、数据可追溯的研究报告。</p>
+    </div>
+    <div class="day">
+      <h3><span class="date">Day 5 · 10 月 25 日（周日）</span> — 稳定性测试与演练</h3>
+      <ul class="checklist">
+        <li>测试数据接口失败、数据缺失、模型失败、无候选股和报告生成失败。</li>
+        <li>准备截至最近一个实际交易日的真实历史数据。</li>
+        <li>准备固定演示数据作为备用，并明确标注为历史数据。</li>
+        <li>整理一条统一启动命令，验证从头到尾可以重复运行。</li>
+        <li>录制 2–3 分钟备用演示视频。</li>
+      </ul>
+      <p><strong>验收：</strong>即使网络或 API 临时异常，也能用预先保存并明确标注的演示数据展示流程。</p>
+    </div>
+    <div class="day">
+      <h3><span class="date">Day 6 · 10 月 26 日（周一）</span> — 演示</h3>
+      <p>运行已验证的版本，不在演示前临时升级依赖或加入新功能。</p>
+    </div>
+    <div class="callout warning">
+      <strong>日历与数据提醒：</strong>2026 年 10 月 24–25 日是周末。演示时应使用真实可验证的数据日期；不要把历史数据描述成实时行情，也不要把周一尚未发生的数据当成已知信息。
+    </div>
+  </section>
+
+  <section id="acceptance">
+    <h2>五、交付优先级与验收标准</h2>
+    <div class="grid three">
+      <div class="card">
+        <span class="tag">P0 · 必须完成</span>
+        <h3>可运行闭环</h3>
+        <ul>
+          <li>Harness 能启动</li>
+          <li>一个自定义工具能被调用</li>
+          <li>行情数据可读取</li>
+          <li>基础指标与选股</li>
+          <li>研究报告输出</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">P1 · 争取完成</span>
+        <h3>更完整的研究</h3>
+        <ul>
+          <li>多步骤 Workflow</li>
+          <li>市场环境分析</li>
+          <li>个股研究与风险检查</li>
+          <li>简单历史回测</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">P2 · 本次不做</span>
+        <h3>避免范围膨胀</h3>
+        <ul>
+          <li>自动下单</li>
+          <li>实时盯盘</li>
+          <li>复杂多 Agent 协作</li>
+          <li>Web 前端</li>
+          <li>机器学习预测模型</li>
+        </ul>
+      </div>
+    </div>
+    <h3>异常情况必须可控</h3>
+    <table>
+      <thead><tr><th>异常</th><th>系统应对</th></tr></thead>
+      <tbody>
+        <tr><td>行情接口失败</td><td>明确报错，不生成虚构行情</td></tr>
+        <tr><td>个股数据缺失</td><td>排除该股票或标注数据异常</td></tr>
+        <tr><td>模型 API 失败</td><td>保留已完成的量化结果</td></tr>
+        <tr><td>候选股为空</td><td>说明筛选条件与结果，不强行推荐</td></tr>
+        <tr><td>报告生成失败</td><td>保留中间结果，允许重新生成</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="demo">
+    <h2>六、星期一的 10–15 分钟演示脚本</h2>
+    <table>
+      <thead><tr><th>时间</th><th>演示内容</th><th>要传达的信息</th></tr></thead>
+      <tbody>
+        <tr><td>1 分钟</td><td>项目背景</td><td>把交易员研究过程标准化</td></tr>
+        <tr><td>2 分钟</td><td>Harness 架构</td><td>Profile、Bundle、Plugin 如何分工</td></tr>
+        <tr><td>2 分钟</td><td>启动工作流</td><td>Agent 如何调用工具并串联步骤</td></tr>
+        <tr><td>3 分钟</td><td>市场分析与选股</td><td>Python 做确定性量化计算</td></tr>
+        <tr><td>3 分钟</td><td>个股研究与风险分析</td><td>模型解释数据，而不是凭空预测</td></tr>
+        <tr><td>2 分钟</td><td>展示最终报告</td><td>结果可追溯、可复用</td></tr>
+        <tr><td>2 分钟</td><td>总结与后续规划</td><td>回测、组合风控、模拟交易</td></tr>
+      </tbody>
+    </table>
+    <h3>最终报告结构</h3>
+    <pre># A 股每日交易研究报告
+
+## 一、报告信息与数据日期
+## 二、市场环境
+## 三、强势板块
+## 四、候选股票与筛选依据
+## 五、重点个股研究
+## 六、交易计划与触发条件
+## 七、风险提示与失效条件
+## 八、数据来源与质量说明
+## 九、次日观察清单</pre>
+    <p class="muted small">研究报告仅用于辅助分析。筛选规则和历史表现不代表未来收益；所有交易决策应由人结合自身情况独立判断。</p>
+  </section>
+
+  <section id="start">
+    <h2>七、现在就开始：Day 1 命令清单</h2>
+    <p>在已经安装 DeepSeek Harness 的终端中执行以下命令。若某条命令不受支持，保留输出并按本机 CLI 帮助调整，不要为了跑通示例而随意改配置。</p>
+    <h3>1. 检查基础开发环境</h3>
+    <pre>node --version
+npm --version
+python3 --version
+git --version</pre>
+    <h3>2. 查看 Harness 命令帮助与版本</h3>
+    <pre>dsh --help
+dsh --version</pre>
+    <h3>3. 尝试导出 Web Profile 配置</h3>
+    <pre>dsh --profile web --dump-config</pre>
+    <p class="muted small">如果版本命令、Profile 名称或参数组合不同，以 <code>dsh --help</code> 和本机实际安装版本为准。</p>
+    <h3>4. 今天要拿到的结果</h3>
+    <ul class="checklist">
+      <li>确认 Harness 版本与 CLI 参数。</li>
+      <li>确认 Profile、Bundle、Plugin 的真实配置位置。</li>
+      <li>找到一个可复用的插件注册示例。</li>
+      <li>创建 Git 仓库与项目目录。</li>
+      <li>决定第一个工具的接入方式。</li>
+    </ul>
+    <div class="callout">
+      <strong>下一步协作方式：</strong>把以上命令的实际输出提供给开发协作者，再基于真实版本实现 <code>trading-research</code> Profile、首个 Bundle，以及从 Harness 到 Python 的第一个行情工具调用。先跑通一条真实链路，再扩展其他工具。
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Stock Trader Copilot · 实施计划（演示版）</p>
+  <p>本页面中的 Bundle、Plugin、工具名和目录结构属于项目设计建议；实施时应以实际 DeepSeek Harness 版本的接口和配置约定为准。</p>
+</footer>
+
+<section class="section" id="workflow-definition">
+  <h2>新增章节：在 DeepSeek Harness（DSH）中定义 Workflow</h2>
+  <p class="lead">核心结论：Workflow 是业务执行流程；Plugin 提供可调用工具；Profile 决定加载哪些能力；Bundle 组织和分发能力。不要在未确认当前 DSH 版本机制前，假设存在原生的 <code>workflow.yaml</code> 文件格式。</p>
+  <h3>1. Workflow 在架构中的位置</h3>
+  <pre><code>用户
+ │
+ ▼
+DeepSeek Harness Runtime
+ │
+ ├── Profile：trading-research
+ │    └── 组合需要加载的 Bundle
+ ├── Bundle：trader-quant
+ │    └── 组织量化研究相关能力
+ ├── Plugin：stock-market
+ │    └── 提供市场行情工具
+ ├── Plugin：stock-screener
+ │    └── 提供量化选股工具
+ └── Agent / 工作流逻辑
+      ├── ① 分析市场
+      ├── ② 筛选股票
+      ├── ③ 检查风险
+      └── ④ 生成研究报告</code></pre>
+  <p>上图是项目的目标架构示意，不表示 DSH 已经内置了完全相同的工作流执行器或配置格式。实际插件注册方式、运行时机制和配置路径应以本机安装版本为准。</p>
+  <h3>2. 方案 A：用 Markdown 描述工作流，再由 Agent 执行</h3>
+  <p>可以先创建 <code>workflows/daily-stock-research.md</code>，把流程、步骤、数据要求和失败处理写清楚。这个文件本身只是工作流说明；除非 DSH 有相应的加载机制，否则它不会因为存在于目录中就自动执行。</p>
+  <pre><code># A股盘后研究工作流
+
+## 目标
+分析市场环境，筛选候选股票，进行风险检查并生成报告。
+
+## Step 1：市场分析
+调用 get_market_snapshot 获取市场概况。
+分析主要指数、成交额和市场涨跌情况。
+数据获取失败时说明原因，不得编造数据。
+
+## Step 2：量化选股
+调用 screen_stocks。
+结果应包含股票代码、名称、最新价格、20日收益率、MA20、MA60，
+并记录使用的筛选条件。
+
+## Step 3：风险检查
+调用 check_stock_risk。
+检查数据完整性、趋势走弱信号、异常波动和行业集中度。
+
+## Step 4：生成报告
+调用 generate_daily_report。
+报告包含市场环境、选股结果、风险提示、后续观察事项、
+数据来源和数据时间。
+
+## 执行约束
+- 不得编造行情数据；缺失数据必须明确标注。
+- 不自动执行买入或卖出。
+- 研究结果不构成收益保证。</code></pre>
+  <h3>3. 方案 B：用 Python 控制固定执行顺序</h3>
+  <p>如果希望每一步都按固定顺序执行、容易测试和复现，可以用 Python 实现工作流控制器，再将入口包装成一个 DSH Plugin 工具。下面是逻辑示例，不是 DSH 原生插件接口代码。</p>
+  <pre><code>def run_daily_research():
+    # Step 1：获取市场概况
+    market = get_market_snapshot()
+
+    # Step 2：量化选股
+    stocks = screen_stocks(market)
+
+    # Step 3：风险检查
+    risk_results = check_stock_risk(stocks)
+
+    # Step 4：生成报告
+    report = generate_daily_report(
+        market=market,
+        stocks=stocks,
+        risks=risk_results,
+    )
+
+    return report</code></pre>
+  <p>用户只需向 Agent 提出“执行今天的 A 股盘后研究”，Agent 调用类似 <code>run_daily_research</code> 的工具，Python 就按预定顺序执行。请为每一步补上异常处理、数据时间校验和结构化返回值。</p>
+  <h3>4. 推荐方案 C：混合模式</h3>
+  <table><thead><tr><th>层次</th><th>建议实现方式</th><th>职责</th></tr></thead><tbody>
+    <tr><td>数据与量化计算</td><td>Python</td><td>行情处理、指标计算、选股规则、风险校验、回测</td></tr>
+    <tr><td>工具连接层</td><td>DSH Plugin</td><td>将可复用的业务能力暴露为 Harness 可调用的工具</td></tr>
+    <tr><td>研究编排与解释</td><td>DSH Agent</td><td>根据用户任务选择工具、解释结果、组织研究报告</td></tr>
+    <tr><td>配置与能力组合</td><td>Profile / Bundle</td><td>按 DSH 实际支持的机制组合和加载能力</td></tr>
+  </tbody></table>
+  <p><strong>推荐原则：</strong>让 Python 保证量化计算的确定性，让 Agent 处理需要上下文理解和语言解释的部分。不要让 LLM 自己心算关键指标，也不要把每个基础指标函数都暴露成一个工具。</p>
+  <h3>5. 哪些函数适合做成 Plugin 工具？</h3>
+  <table><thead><tr><th>功能</th><th>建议</th><th>理由</th></tr></thead><tbody>
+    <tr><td><code>get_market_snapshot</code></td><td>暴露为工具</td><td>Agent 可以按任务需要调用</td></tr>
+    <tr><td><code>screen_stocks</code></td><td>暴露为工具</td><td>独立的量化研究能力</td></tr>
+    <tr><td><code>check_stock_risk</code></td><td>暴露为工具或固定流程内部步骤</td><td>可独立调用，也可强制纳入固定流程</td></tr>
+    <tr><td><code>generate_daily_report</code></td><td>暴露为工具</td><td>负责生成统一格式的报告</td></tr>
+    <tr><td>MA20、MA60、收益率计算</td><td>通常作为内部函数</td><td>由指标模块或选股模块调用即可</td></tr>
+    <tr><td>数据清洗、代码格式转换</td><td>作为内部函数</td><td>属于底层辅助逻辑</td></tr>
+  </tbody></table>
+  <h3>6. 建议的目录结构</h3>
+  <pre><code>stock-trader-copilot/
+├── workflows/
+│   └── daily-stock-research.md
+├── python/
+│   └── trader/
+│       ├── data/
+│       ├── indicators/
+│       ├── screening/
+│       ├── research/
+│       ├── risk/
+│       └── reporting/
+├── harness/
+│   ├── profiles/
+│   ├── bundles/
+│   └── plugins/
+└── tests/</code></pre>
+  <p>这是项目组织建议。Profile、Bundle、Plugin 的具体目录、清单文件和注册格式，应与当前 DSH 版本的实际要求一致。如果 Plugin 在 Node.js 环境运行而业务代码使用 Python，可以通过子进程调用 Python CLI，或通过 HTTP 调用独立的 Python 服务；具体选型取决于插件协议和部署方式。</p>
+  <h3>7. 推荐的演示流程</h3>
+  <ol><li>用户输入“执行今天的 A 股盘后研究”。</li><li>DSH Agent 选择并调用市场概况工具。</li><li>调用选股工具，由 Python 执行确定性的筛选逻辑。</li><li>执行风险检查，明确标注数据缺失和异常。</li><li>生成 Markdown 研究报告，并说明数据来源与时间。</li></ol>
+  <p>演示重点是展示 Agent 如何调用工具，以及工具如何连接到真实的 Python 业务模块；不要把示意代码误认为已验证的 DSH 插件 API。</p>
+  <h3>8. 实施前验证清单</h3>
+  <ul><li>确认当前 DSH 版本和 CLI 命令。</li><li>确认 Plugin 的发现、注册、参数定义和返回值协议。</li><li>确认 Profile 与 Bundle 的实际加载关系和配置格式。</li><li>先注册一个最小工具并成功调用，再接入 Python 行情模块。</li><li>先跑通“市场概况 → 选股 → 报告”的最小闭环，再增加复杂 Agent 或回测。</li></ul>
+</section>
+
+</body>
+</html>
