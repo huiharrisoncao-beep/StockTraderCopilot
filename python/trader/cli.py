@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import Any
 
 from trader.contracts import INVALID_ARGUMENT, INTERNAL, TraderError, envelope, error_body
+from trader.data.fixture_source import load_manifest, resolve_dataset
 from trader.data.freeze import freeze_fixture
 from trader.pipeline import run_daily
 from trader.store.sqlite_store import connect, load_run
@@ -24,6 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     snapshot = sub.add_parser("market-snapshot")
     _add_common(snapshot)
     snapshot.add_argument("--dataset")
+    snapshot.add_argument("--as-of")
 
     screen = sub.add_parser("screen")
     screen.add_argument("--run-id", required=True)
@@ -54,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "daily":
             payload = run_daily(args.universe, args.data_mode, args.dataset)
         elif args.command == "market-snapshot":
+            _reject_mismatched_as_of(args.universe, args.data_mode, args.dataset, args.as_of)
             payload = _snapshot(args.universe, args.data_mode, args.dataset)
         elif args.command == "screen":
             payload = _screen(args.run_id)
@@ -83,6 +87,26 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--universe", default="demo")
     parser.add_argument("--data-mode", default="fixture", choices=["fixture", "live"])
     parser.add_argument("--json", action="store_true")
+
+
+def _reject_mismatched_as_of(
+    universe: str,
+    data_mode: str,
+    dataset: str | None,
+    as_of: str | None,
+) -> None:
+    if not as_of:
+        return
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", as_of) is None:
+        raise TraderError(INVALID_ARGUMENT, "as_of 必须是 YYYY-MM-DD")
+    if data_mode != "fixture":
+        raise TraderError(INVALID_ARGUMENT, "Day 3 的 as_of 只用于核对 fixture 数据日期")
+    manifest = load_manifest(resolve_dataset(universe, dataset))
+    if str(manifest.get("data_date")) != as_of:
+        raise TraderError(
+            INVALID_ARGUMENT,
+            f"样本数据日期是 {manifest.get('data_date')}，不能改成 {as_of}",
+        )
 
 
 def _snapshot(universe: str, data_mode: str, dataset: str | None) -> dict[str, Any]:

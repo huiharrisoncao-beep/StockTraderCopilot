@@ -4,7 +4,7 @@
     - id: stock-research
       name: "@stock-trader/dsh-plugin"
       config:
-        python: "python3"
+        python: "/Users/harrisoncao/Workspace/StockTraderCopilot/.venv/bin/python"
         module: "trader.cli"
         projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
         dataMode: "fixture"

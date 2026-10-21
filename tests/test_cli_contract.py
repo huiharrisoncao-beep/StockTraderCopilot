@@ -138,3 +138,17 @@ def test_business_and_usage_exits(monkeypatch, capsys, tmp_path: Path) -> None:
     bad_code, bad = _run(monkeypatch, capsys, tmp_path, ["daily", "--universe"])
     assert bad_code == 1
     assert bad["error"]["code"] == "INVALID_ARGUMENT"
+
+
+def test_as_of_cannot_replace_fixture_date(monkeypatch, capsys, tmp_path: Path) -> None:
+    _write_fixture(tmp_path)
+    code, payload = _run(
+        monkeypatch,
+        capsys,
+        tmp_path,
+        ["market-snapshot", "--universe", "demo", "--data-mode", "fixture", "--as-of", "2020-01-01", "--json"],
+    )
+    assert code == 1
+    assert payload["ok"] is False
+    assert payload["error"]["code"] == "INVALID_ARGUMENT"
+    assert payload["data"] is None

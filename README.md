@@ -100,3 +100,24 @@ PYTHONPATH=python .venv/bin/python -m pytest tests -q
 规则集是 `trend_volume_v1`。没有候选时 `ok` 仍为 `true`，`error` 为 `null`。`csi300` 在 Day 2 返回 `INVALID_ARGUMENT`。涨跌家数来自快照，不是交易所官方统计。
 
 2026-10-21 23:30 冻结的样本是 [data/fixtures/demo-20261021](data/fixtures/demo-20261021)。当时东方财富 `push2` / `push2his` 断开，所以 manifest 记录的实际接口是 `stock_zh_a_hist_tx` 和一页新浪成交额排序。150 只股票全部抓到，最后交易日 `2026-10-21`，上证收盘 `3713.03`。成交量单位是股。连续两次 `daily` 的前十代码和顺序一致，第一条是 `300031`。涨跌家数范围是 `demo_universe`，不是全市场。
+
+## Day 3 Harness
+
+插件仍是一个包，注册 `ping_research`、`get_market_snapshot` 和 `screen_stocks`。工具不接收文件路径。数据模式来自 Profile patch，模型不能改。Python 使用仓库虚拟环境，避免系统 `python3` 没有依赖。
+
+```sh
+cd /Users/harrisoncao/Workspace/StockTraderCopilot
+dsh --profile trading-research --no-open --port 8787
+node --experimental-strip-types --test harness/plugins/stock-research/test/runner.test.mjs
+```
+
+固定提示词：
+
+```text
+加载 daily-stock-research。使用 fixture 数据，执行最近一个已冻结交易日的 A 股盘后研究。
+只引用工具返回的数字。如果工具失败，停止并说明错误码。不要给出买卖指令。
+```
+
+插件入口已用与 DSH 相同的方式加载。三个工具都能注册；fixture 快照 `ok: true`，`data_date` 为 `2026-10-21`，上证收盘 `3713.03`；`screen_stocks` 按 `limit: 2` 切出 `300031`、`603626`。`dsh --dump-config` 能看到插件 `stock-research`。Profile 启动后才会在会话里挂上工具。
+
+在 UI 里把工作区加到本仓库后，`AGENTS.md` 才会进入会话。个股研究和报告工具留到 Day 4。
