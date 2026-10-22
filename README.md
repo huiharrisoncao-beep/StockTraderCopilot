@@ -132,3 +132,39 @@ node --experimental-strip-types --test harness/plugins/stock-research/test/runne
 ```
 
 `daily` 会在筛选后继续写研究卡、风险命中和 `reports/<data_date>/<run_id>.md`。模型失败时可以直接打开这个文件。免责声明固定为：研究结果仅用于演示研究流程，不构成投资建议，不保证收益，不触发任何交易。
+
+## Day 5 冻结与演练
+
+演示前不再改 [harness/patches/trading-research.patch.yml](harness/patches/trading-research.patch.yml)，不升级 `dsh`，不重跑 `freeze-fixture`。最近一个已完成交易日仍是 `2026-10-21`；2026-10-22 上午市场还没有收盘。Profile 里多出来的 `welcomeNoticeVersion` 是 DSH 写的界面状态，不要删。
+
+统一启动：
+
+```sh
+cd /Users/harrisoncao/Workspace/StockTraderCopilot
+dsh --profile trading-research --no-open --port 8787
+```
+
+模型或网络不可用时，不启动 Harness，直接出报告：
+
+```sh
+cd /Users/harrisoncao/Workspace/StockTraderCopilot
+PYTHONPATH=python .venv/bin/python -m trader.cli daily --universe demo --data-mode fixture --json
+```
+
+这条命令在代理指向 `127.0.0.1:9` 时仍能结束。2026-10-22 的实测是 0.783 秒，`data_date` 为 `2026-10-21`，第一名 `300031`，收盘 `26.36`，连续两次候选顺序相同。报告在 `reports/2026-10-21/research-20261022-082010.md`。
+
+五次演练的原始结果在 [docs/day5-drill-log.md](docs/day5-drill-log.md)：
+
+| 演练 | 实际结果 |
+|---|---|
+| 样本目录不存在 | 退出码 2，`DATA_SOURCE_UNAVAILABLE`，`data` 为 `null` |
+| 删掉 `300031` 最后收盘价 | 退出码 0，该票 `DATA_INCOMPLETE`，不在候选里；第一名变成 `603626` |
+| 20 日收益率下限临时改为 9 | 退出码 0，`error` 为 `null`，候选 0。报告只写空表和免责声明，磁盘规则仍是 0.05 |
+| 报告目录不可写 | 退出码 2，`REPORT_WRITE_FAILED`。SQLite 仍有 10 条筛选、5 张研究卡、9 条风险，报告行是 0。错误 JSON 带 `run_id`，路径恢复后只重跑 `report --run-id` |
+| 无模型且代理不可用 | 退出码 0，报告骨架照常生成 |
+
+直接依赖仍钉在 [python/requirements.txt](python/requirements.txt)。完整环境冻结在 [python/requirements.lock.txt](python/requirements.lock.txt)。不要执行 `pip install -U`。
+
+备用讲解稿在 [docs/day5-backup-script.md](docs/day5-backup-script.md)。2–3 分钟视频需要在本机 Web UI 里录，仓库里没有视频文件。
+
+Day 1 笔记里的 `disable-model-invocation` 已经过时。当前 [.dsh/skills/daily-stock-research/SKILL.md](.dsh/skills/daily-stock-research/SKILL.md) 允许模型加载。演示前仍要在 UI 里把工作区加到本仓库，`AGENTS.md` 才会进入会话。

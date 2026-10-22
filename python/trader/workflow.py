@@ -100,7 +100,12 @@ def report_payload(run_id: str) -> dict[str, Any]:
             "cards": cards,
             "flags": flags,
         }
-        markdown_path, json_path = write_report(context)
+        try:
+            markdown_path, json_path = write_report(context)
+        except TraderError as exc:
+            exc.run_id = run_id
+            exc.data_date = found["data_date"]
+            raise
         save_report(conn, run_id, markdown_path, json_path, context["generated_at"])
     warnings = [
         "本地历史样本，不是实时行情。",
@@ -130,8 +135,8 @@ def failure_envelope(tool: str, exc: TraderError) -> dict[str, Any]:
     return envelope(
         ok=False,
         tool=tool,
-        run_id=None,
-        data_date=None,
+        run_id=exc.run_id,
+        data_date=exc.data_date,
         source=SQLITE_SOURCE,
         data=None,
         error=error_body(exc),

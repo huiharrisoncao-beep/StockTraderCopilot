@@ -94,10 +94,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             raise TraderError(INVALID_ARGUMENT, f"未知命令 {args.command}")
     except TraderError as exc:
-        _emit(_failure(args.command, exc))
+        _emit(_failure(args.command, exc, args))
         return 1 if exc.code == INVALID_ARGUMENT else 2
     except Exception:
-        _emit(_failure(args.command, TraderError(INTERNAL, "未分类异常")))
+        _emit(_failure(args.command, TraderError(INTERNAL, "未分类异常"), args))
         return 2
     _emit(payload)
     return 0
@@ -151,7 +151,7 @@ def _screen(run_id: str) -> dict[str, Any]:
     )
 
 
-def _failure(command: str, exc: TraderError) -> dict[str, Any]:
+def _failure(command: str, exc: TraderError, args: argparse.Namespace | None = None) -> dict[str, Any]:
     tool = {
         "daily": "run_daily_research",
         "market-snapshot": "get_market_snapshot",
@@ -161,13 +161,19 @@ def _failure(command: str, exc: TraderError) -> dict[str, Any]:
         "report": "generate_daily_report",
         "freeze-fixture": "freeze_fixture",
     }.get(command, command)
+    run_id = exc.run_id or getattr(args, "run_id", None)
+    data_date = exc.data_date
     if command in {"stock-research", "check-risk", "report"}:
-        return failure_envelope(tool, exc)
+        payload = failure_envelope(tool, exc)
+        payload["run_id"] = run_id
+        if data_date is not None:
+            payload["data_date"] = data_date
+        return payload
     return envelope(
         ok=False,
         tool=tool,
-        run_id=None,
-        data_date=None,
+        run_id=run_id,
+        data_date=data_date,
         source={"provider": None, "dataset": None, "adjustment": "qfq"},
         data=None,
         error=error_body(exc),

@@ -20,10 +20,20 @@ INTERNAL = "INTERNAL"
 
 
 class TraderError(Exception):
-    def __init__(self, code: str, message: str, *, retryable: bool = False) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        retryable: bool = False,
+        run_id: str | None = None,
+        data_date: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.retryable = retryable
+        self.run_id = run_id
+        self.data_date = data_date
 
 
 def now_shanghai() -> datetime:
