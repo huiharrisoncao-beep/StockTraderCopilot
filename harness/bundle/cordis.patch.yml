@@ -1,0 +1,31 @@
+# @stock-trader/dsh-trading-bundle
+#
+# This bundle patch is applied as ONE composition layer when the bundle is listed
+# in the profile's dsh.profile.bundles. It inserts the seven research plugins.
+# The bundle package depends on all seven plugin packages, so adding the bundle
+# installs them together.
+#
+# Only run-store carries config. The tool plugins inject the researchRunStore
+# service it provides, so there is a single place to change the Python path or
+# switch dataMode between fixture and live.
+- insert:
+    - id: research-run-store
+      name: "@stock-trader/dsh-plugin-run-store"
+      config:
+        python: "/Users/harrisoncao/Workspace/StockTraderCopilot/.venv/bin/python"
+        module: "trader.cli"
+        projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
+        dataMode: "fixture"
+        timeoutMs: 120000
+    - id: market-data
+      name: "@stock-trader/dsh-plugin-market-data"
+    - id: screening
+      name: "@stock-trader/dsh-plugin-screening"
+    - id: research-report
+      name: "@stock-trader/dsh-plugin-research-report"
+    - id: research-guardrails
+      name: "@stock-trader/dsh-plugin-guardrails"
+    - id: research-skill
+      name: "@stock-trader/dsh-plugin-skill"
+    - id: research-command
+      name: "@stock-trader/dsh-plugin-command"

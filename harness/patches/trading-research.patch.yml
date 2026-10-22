@@ -1,11 +1,13 @@
-# Appended to ~/.dsh/profiles/trading-research/cordis.patch.yml.
-# A bare id overrides an existing row. A new plugin must be inserted.
-- insert:
-    - id: stock-research
-      name: "@stock-trader/dsh-plugin"
-      config:
-        python: "/Users/harrisoncao/Workspace/StockTraderCopilot/.venv/bin/python"
-        module: "trader.cli"
-        projectRoot: "/Users/harrisoncao/Workspace/StockTraderCopilot"
-        dataMode: "fixture"
-        timeoutMs: 120000
+# Canonical copy of the profile USER patch layer
+# (~/.dsh/profiles/trading-research/cordis.patch.yml).
+#
+# The seven research plugins no longer load from this user patch. They load from
+# the @stock-trader/dsh-trading-bundle bundle, listed in the profile's
+# dsh.profile.bundles (see harness/bundle/ and docs/plugin-architecture.md).
+# The bundle patch that inserts the seven plugins is harness/bundle/cordis.patch.yml.
+#
+# This user layer only keeps DSH's own UI row, applied after every bundle layer.
+- id: ui-settings-general
+  name: "@deepseek-ai/dsh-client-ui-settings-general"
+  config:
+    welcomeNoticeVersion: 2026-09-28.1

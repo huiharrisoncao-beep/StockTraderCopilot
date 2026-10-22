@@ -1,0 +1,17 @@
+{
+  "name": "@stock-trader/dsh-plugin-skill",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Ships the daily-stock-research skill from inside a plugin.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18",
+    "dsh": "0.2.1-rc.2"
+  },
+  "dependencies": {
+    "@stock-trader/dsh-plugin-shared": "link:../shared"
+  }
+}

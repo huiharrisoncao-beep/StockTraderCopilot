@@ -1,0 +1,17 @@
+{
+  "name": "@stock-trader/dsh-plugin-research-report",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Per-stock research, risk, and report tools. Injects the researchRunStore service.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18",
+    "dsh": "0.2.1-rc.2"
+  },
+  "dependencies": {
+    "@stock-trader/dsh-plugin-shared": "link:../shared"
+  }
+}

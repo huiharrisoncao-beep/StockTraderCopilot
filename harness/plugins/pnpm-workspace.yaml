@@ -1,0 +1,9 @@
+packages:
+  - "shared"
+  - "run-store"
+  - "market-data"
+  - "screening"
+  - "research-report"
+  - "guardrails"
+  - "skill"
+  - "command"

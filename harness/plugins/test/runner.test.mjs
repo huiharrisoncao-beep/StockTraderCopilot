@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-const { readConfig, runMarketSnapshot, runReport, runResearch, runRisk, runScreen } = await import(new URL("../src/runner.js", import.meta.url));
+const { readConfig, runMarketSnapshot, runReport, runResearch, runRisk, runScreen } = await import(new URL("../shared/src/runner.js", import.meta.url));
 
 const config = readConfig({
   python: "/Users/harrisoncao/Workspace/StockTraderCopilot/.venv/bin/python",

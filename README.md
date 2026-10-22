@@ -29,15 +29,15 @@ Profile 从 `web` 模板复制，不改日常使用的 `web`。模板只包含 `
 dsh --profile trading-research --from-default-profile web --no-open --port 8787
 ```
 
-插件安装命令已经跑通。pnpm 接受本地绝对路径，并记成 `link:` 依赖：
+插件安装命令已经跑通。pnpm 接受本地绝对路径，并记成 `link:` 依赖。Day 1 当时是单插件：
 
 ```sh
 dsh plugin --profile trading-research add /Users/harrisoncao/Workspace/StockTraderCopilot/harness/plugins/stock-research
 ```
 
-安装输出会警告包没有 `dsh.bundle`，因此它只是依赖，不是自动加载的配置层。加载靠 Profile patch 里的 `insert`。裸写 `- id` 只能覆盖已有行；不存在的 id 会报 `entry "stock-research" not found`。
+安装输出会警告包没有 `dsh.bundle`，因此它只是依赖，不是自动加载的配置层。当时加载靠 Profile patch 里的 `insert`。裸写 `- id` 只能覆盖已有行；不存在的 id 会报 `entry "stock-research" not found`。
 
-可复制的 patch 在 [harness/patches/trading-research.patch.yml](harness/patches/trading-research.patch.yml)，并已写入 `~/.dsh/profiles/trading-research/cordis.patch.yml`。
+> 这部分后来重构了：单插件拆成七个独立插件包 + 一个共享 lib 包（pnpm workspace），并改用一个 **bundle**（`dsh.bundle`）作为加载层装进 Profile，不再走用户 patch 的 `insert`。完整说明见 [docs/plugin-architecture.md](docs/plugin-architecture.md)。[harness/patches/trading-research.patch.yml](harness/patches/trading-research.patch.yml) 现在只保留 DSH 自己的 UI 行。
 
 启动：
 
@@ -108,7 +108,7 @@ PYTHONPATH=python .venv/bin/python -m pytest tests -q
 ```sh
 cd /Users/harrisoncao/Workspace/StockTraderCopilot
 dsh --profile trading-research --no-open --port 8787
-node --experimental-strip-types --test harness/plugins/stock-research/test/runner.test.mjs
+node --experimental-strip-types --test harness/plugins/test/runner.test.mjs
 ```
 
 固定提示词：
@@ -118,7 +118,9 @@ node --experimental-strip-types --test harness/plugins/stock-research/test/runne
 只引用工具返回的数字。如果工具失败，停止并说明错误码。不要给出买卖指令。
 ```
 
-插件入口已用与 DSH 相同的方式加载。三个工具都能注册；fixture 快照 `ok: true`，`data_date` 为 `2026-10-21`，上证收盘 `3713.03`；`screen_stocks` 按 `limit: 2` 切出 `300031`、`603626`。`dsh --dump-config` 能看到插件 `stock-research`。Profile 启动后才会在会话里挂上工具。
+插件入口已用与 DSH 相同的方式加载。三个工具都能注册；fixture 快照 `ok: true`，`data_date` 为 `2026-10-21`，上证收盘 `3713.03`；`screen_stocks` 按 `limit: 2` 切出 `300031`、`603626`。
+
+> 注：这些工具后来拆进了多个插件，见本文末“多插件架构”。当时的单插件 `stock-research` 已不再使用。
 
 在 UI 里把工作区加到本仓库后，`AGENTS.md` 才会进入会话。
 
@@ -128,7 +130,7 @@ node --experimental-strip-types --test harness/plugins/stock-research/test/runne
 
 ```sh
 PYTHONPATH=python .venv/bin/python -m trader.cli daily --universe demo --data-mode fixture --json
-node --experimental-strip-types --test harness/plugins/stock-research/test/runner.test.mjs
+node --experimental-strip-types --test harness/plugins/test/runner.test.mjs
 ```
 
 `daily` 会在筛选后继续写研究卡、风险命中和 `reports/<data_date>/<run_id>.md`。模型失败时可以直接打开这个文件。免责声明固定为：研究结果仅用于演示研究流程，不构成投资建议，不保证收益，不触发任何交易。
@@ -168,3 +170,29 @@ PYTHONPATH=python .venv/bin/python -m trader.cli daily --universe demo --data-mo
 备用讲解稿在 [docs/day5-backup-script.md](docs/day5-backup-script.md)。2–3 分钟视频需要在本机 Web UI 里录，仓库里没有视频文件。
 
 Day 1 笔记里的 `disable-model-invocation` 已经过时。当前 [.dsh/skills/daily-stock-research/SKILL.md](.dsh/skills/daily-stock-research/SKILL.md) 允许模型加载。演示前仍要在 UI 里把工作区加到本仓库，`AGENTS.md` 才会进入会话。
+
+## 多插件架构（演示重点）
+
+为突出“插件”这一主题，原来的单插件拆成**七个独立插件包 + 一个共享 lib 包**（pnpm workspace 链接 `harness/plugins/`），再用一个 **bundle**（`harness/bundle/`）作为加载层装进 Profile。覆盖四类扩展点：工具、服务、系统提示、技能、斜杠命令。完整说明见 [docs/plugin-architecture.md](docs/plugin-architecture.md)。
+
+| 插件包目录 | 扩展点 | 作用 |
+|---|---|---|
+| `plugins/run-store` | 服务 | 提供 `researchRunStore`，持有配置并封装 Python。唯一带 config 的插件 |
+| `plugins/market-data` | 工具 | `ping_research`、`get_market_snapshot` |
+| `plugins/screening` | 工具 | `screen_stocks` |
+| `plugins/research-report` | 工具 | `get_stock_research_data`、`check_stock_risk`、`generate_daily_report` |
+| `plugins/guardrails` | 系统提示 | 注入合规护栏段，不注册任何工具 |
+| `plugins/skill` | 技能 | 插件内注册 `daily-stock-research` |
+| `plugins/command` | 斜杠命令 | `/research` 一键发起盘后研究 |
+
+三个工具插件都不带配置，`inject` 共享服务后调用 `store.snapshot/screen/research/risk/report`。改 Python 路径或数据模式只动 bundle patch 里 `run-store` 一处，一个 `run_id` 贯穿全流程。加载通过 bundle：Profile 的 `dsh.profile.bundles` 里加 `@stock-trader/dsh-trading-bundle`，它的 `cordis.patch.yml` 一次 insert 七条。
+
+```sh
+cd harness/plugins && pnpm install            # 链接共享包
+dsh plugin --profile trading-research install # 链接 bundle 与七个插件
+dsh --profile trading-research --dump-config | grep -A1 'dsh-trading-bundle'
+node --experimental-strip-types --test harness/plugins/test/plugins.test.mjs
+node --experimental-strip-types --test harness/plugins/test/runner.test.mjs
+```
+
+集成测试在真实 Cordis `Context` 上挂载七个插件，验证服务注入、一个 `run_id` 跑通全流程、护栏进系统提示、技能进技能表、`/research` 触发固定提示词。`dump-config` 能看到独立的 bundle 层含七条插件；Profile 启动无加载错误。

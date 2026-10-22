@@ -1,0 +1,17 @@
+{
+  "name": "@stock-trader/dsh-plugin-market-data",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Market tools (ping_research, get_market_snapshot). Injects the researchRunStore service.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=22.18",
+    "dsh": "0.2.1-rc.2"
+  },
+  "dependencies": {
+    "@stock-trader/dsh-plugin-shared": "link:../shared"
+  }
+}

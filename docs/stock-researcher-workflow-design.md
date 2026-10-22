@@ -237,6 +237,8 @@ dsh --profile trading-research-headless --json "使用 daily-stock-research，�
 
 演示周用 **一个本地插件 + 一段 patch**，不先拆三个 bundle。拆 bundle 不增加研究正确性，却增加安装失败点。
 
+> 更新（演示主题调整）：因为本次演示的重点就是“插件”，单插件已拆成**七个独立插件包 + 一个共享 lib 包**（pnpm workspace），并改用一个 **bundle** 作为加载层装进 Profile，不再走用户 patch 的 `insert`。覆盖工具、服务、系统提示、技能、斜杠命令四类扩展点，通过一个共享服务协作。拆分方式、目录结构、bundle 加载和验证见 [plugin-architecture.md](plugin-architecture.md)。下面 5.3 的单插件描述保留为历史。
+
 计划中的三个名字保留为模块边界，而不是三个 npm 包：
 
 | 计划中的名字 | 演示周的落点 |
