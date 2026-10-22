@@ -1,0 +1,25 @@
+{
+  "name": "@stock-trader/dsh-trading-bundle",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Stock Trader Copilot bundle: loads the seven research plugins as one composition layer.",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "exports": {
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@stock-trader/dsh-plugin-run-store": "link:../plugins/run-store",
+    "@stock-trader/dsh-plugin-market-data": "link:../plugins/market-data",
+    "@stock-trader/dsh-plugin-screening": "link:../plugins/screening",
+    "@stock-trader/dsh-plugin-research-report": "link:../plugins/research-report",
+    "@stock-trader/dsh-plugin-guardrails": "link:../plugins/guardrails",
+    "@stock-trader/dsh-plugin-skill": "link:../plugins/skill",
+    "@stock-trader/dsh-plugin-command": "link:../plugins/command"
+  }
+}
