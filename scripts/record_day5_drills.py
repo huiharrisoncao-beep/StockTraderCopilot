@@ -39,20 +39,25 @@ def main_record() -> None:
 def _versions() -> str:
     dsh = _run(["dsh", "--version"], cwd=ROOT).stdout.strip()
     node = _run(["node", "--version"], cwd=ROOT).stdout.strip()
-    patch = (ROOT / "harness/patches/trading-research.patch.yml").read_bytes()
-    profile = Path.home() / ".dsh/profiles/trading-research/cordis.patch.yml"
-    same = "dataMode: \"fixture\"" in profile.read_text(encoding="utf-8") and "timeoutMs: 120000" in profile.read_text(encoding="utf-8")
+    # The research plugins load from the bundle layer, so the fixture/timeout
+    # config now lives in the bundle patch, not the profile user patch.
+    bundle_patch = (ROOT / "harness/bundle/cordis.patch.yml").read_bytes()
+    bundle_text = bundle_patch.decode("utf-8")
+    config_ok = 'dataMode: "fixture"' in bundle_text and "timeoutMs: 120000" in bundle_text
+    profile_pkg = (Path.home() / ".dsh/profiles/trading-research/package.json").read_text(encoding="utf-8")
+    bundle_loaded = "@stock-trader/dsh-trading-bundle" in profile_pkg
     rules = (ROOT / "python/trader/screening/rules.py").read_text(encoding="utf-8")
     return "\n".join(
         [
             "# Day 5 故障演练记录",
             "",
-            "记录的是命令实际输出，不是“已测试”。样本和 Profile patch 没有被改写。",
+            "记录的是命令实际输出，不是“已测试”。样本和 bundle patch 没有被改写。",
             "",
             f"- `dsh --version`: `{dsh}`",
             f"- Node: `{node}`",
-            f"- patch sha256: `{hashlib.sha256(patch).hexdigest()}`",
-            f"- Profile 仍是 fixture / 120000ms: `{same}`。字节不完全相同，因为 DSH 另写了欢迎提示版本。",
+            f"- bundle patch sha256: `{hashlib.sha256(bundle_patch).hexdigest()}`",
+            f"- bundle patch 仍是 fixture / 120000ms: `{config_ok}`",
+            f"- Profile 已把 @stock-trader/dsh-trading-bundle 加入 bundles: `{bundle_loaded}`",
             f"- 磁盘上的 `min_return_20d` 仍是 0.05: `{'0.05' in rules}`",
             "- 2026-10-22 上午尚未收盘。最近一个已完成交易日仍是 fixture 的 `2026-10-21`。这次没有重跑 `freeze-fixture`，避免换掉备用样本。",
         ]

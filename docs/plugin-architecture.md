@@ -34,7 +34,7 @@ harness/
 | `@stock-trader/dsh-plugin-screening` | 工具 | `screen_stocks` |
 | `@stock-trader/dsh-plugin-research-report` | 工具 | `get_stock_research_data`、`check_stock_risk`、`generate_daily_report` |
 | `@stock-trader/dsh-plugin-guardrails` | **系统提示（systemPrompt）** | 注入合规护栏段：不给买卖指令、只引用工具 JSON、`data_date` 不是“今天” |
-| `@stock-trader/dsh-plugin-skill` | **技能（skills）** | 从插件内注册 `daily-stock-research` 技能 |
+| `@stock-trader/dsh-plugin-skill` | **技能（skills）** | 从插件内注册 `stock-research-pipeline` 技能（与文件系统的 `daily-stock-research` 分开命名，避免被项目技能遮住） |
 | `@stock-trader/dsh-plugin-command` | **斜杠命令（commands）** | `/research` 一键按固定提示词发起研究 |
 
 ## bundle 怎么加载

@@ -178,11 +178,11 @@ test("guardrails plugin injects a system-prompt section without a tool", async (
   assert.equal(captured.tools.registry.size, 0);
 });
 
-test("skill plugin ships daily-stock-research through the skills registry", async () => {
+test("skill plugin ships stock-research-pipeline through the skills registry", async () => {
   const { ctx, captured } = host();
   ctx.plugin(skill);
   await settle();
-  const entry = captured.skills.skills.get("daily-stock-research");
+  const entry = captured.skills.skills.get("stock-research-pipeline");
   assert.ok(entry);
   assert.equal(entry.invocation.modelInvocable, true);
   assert.match(entry.content, /get_market_snapshot/);

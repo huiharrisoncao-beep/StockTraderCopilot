@@ -67,7 +67,7 @@ ping_research {"note":"ping once as requested"}
 → {"ok":true,"tool":"ping_research","note":"ping once as requested"}
 ```
 
-插件源码在 [harness/plugins/stock-research/src/index.ts](harness/plugins/stock-research/src/index.ts)。它从 `~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tools` 动态加载 `defineTool`。因为 Profile 用的是指向仓库的符号链接，Node 会从仓库真实路径解析依赖，走不回 Profile 的 `node_modules`。
+插件源码当时是单文件 `harness/plugins/stock-research/src/index.ts`（后来拆成多个包，见 [docs/plugin-architecture.md](docs/plugin-architecture.md)；`defineTool` 的动态加载现在在 [harness/plugins/shared/src/dsh-tools.js](harness/plugins/shared/src/dsh-tools.js)）。它从 `~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tools` 动态加载 `defineTool`。因为 Profile 用的是指向仓库的符号链接，Node 会从仓库真实路径解析依赖，走不回 Profile 的 `node_modules`。
 
 这次 Web 会话仍停在已有工作区 `DSSpace`。嵌入式目录选择器没有弹出，所以没有改 `~/.dsh/storages/workspace.json`。插件是 Profile 级的，这次调用不依赖工作区。Day 3 之前要在 UI 里把工作区加到本仓库，`AGENTS.md` 才会进入会话。
 
@@ -182,7 +182,7 @@ Day 1 笔记里的 `disable-model-invocation` 已经过时。当前 [.dsh/skills
 | `plugins/screening` | 工具 | `screen_stocks` |
 | `plugins/research-report` | 工具 | `get_stock_research_data`、`check_stock_risk`、`generate_daily_report` |
 | `plugins/guardrails` | 系统提示 | 注入合规护栏段，不注册任何工具 |
-| `plugins/skill` | 技能 | 插件内注册 `daily-stock-research` |
+| `plugins/skill` | 技能 | 插件内注册 `stock-research-pipeline`（与文件系统的 `daily-stock-research` 分开命名） |
 | `plugins/command` | 斜杠命令 | `/research` 一键发起盘后研究 |
 
 三个工具插件都不带配置，`inject` 共享服务后调用 `store.snapshot/screen/research/risk/report`。改 Python 路径或数据模式只动 bundle patch 里 `run-store` 一处，一个 `run_id` 贯穿全流程。加载通过 bundle：Profile 的 `dsh.profile.bundles` 里加 `@stock-trader/dsh-trading-bundle`，它的 `cordis.patch.yml` 一次 insert 七条。
