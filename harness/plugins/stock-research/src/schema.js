@@ -135,5 +135,89 @@ function envelope(data) {
   };
 }
 
+const researchCard = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    symbol: { type: "string", required: true },
+    name: { ...nullableString, required: true },
+    industry: { ...nullableString, required: true },
+    data_date: { type: "string", required: true },
+    close: { ...nullableNumber, required: true },
+    ma20: { ...nullableNumber, required: true },
+    ma60: { ...nullableNumber, required: true },
+    return_20d: { ...nullableNumber, required: true },
+    volume_ratio: { ...nullableNumber, required: true },
+    distance_to_high_60d: { ...nullableNumber, required: true },
+    rule_set: { type: "string", required: true },
+    closes_above_ma20_ratio: { ...nullableNumber, required: true },
+    missing_fields: { type: "array", required: true, items: { type: "string" } },
+    unavailable_fields: { type: "array", required: true, items: { type: "string" } },
+    valuation: { type: "null", required: true },
+    news: { type: "null", required: true },
+    fund_flow: { type: "null", required: true },
+  },
+};
+
+const riskFlag = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    symbol: { type: "string", required: true },
+    code: { type: "string", required: true },
+    severity: { type: "string", required: true, enum: ["block", "warn"] },
+    message: { type: "string", required: true },
+  },
+};
+
+const industryCount = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    industry: { type: "string", required: true },
+    count: { type: "integer", required: true },
+  },
+};
+
+const researchData = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    rule_set: { type: "string", required: true },
+    cards: { type: "array", required: true, items: researchCard },
+    symbols: { type: "array", required: true, items: { type: "string" } },
+  },
+};
+
+const riskData = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    flags: { type: "array", required: true, items: riskFlag },
+    blocked_symbols: { type: "array", required: true, items: { type: "string" } },
+    focus_symbols: { type: "array", required: true, items: { type: "string" } },
+  },
+};
+
+const reportData = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    markdown_path: { type: "string", required: true },
+    json_path: { type: "string", required: true },
+    disclaimer: { type: "string", required: true },
+    market: { ...market, required: true },
+    screening: { ...screening, required: true },
+    cards: { type: "array", required: true, items: researchCard },
+    flags: { type: "array", required: true, items: riskFlag },
+    industry_distribution: { type: "array", required: true, items: industryCount },
+    focus_symbols: { type: "array", required: true, items: { type: "string" } },
+    blocked_symbols: { type: "array", required: true, items: { type: "string" } },
+  },
+};
+
 export const marketSnapshotSchema = envelope({ oneOf: [market, { type: "null" }] });
 export const screenSchema = envelope({ oneOf: [screening, { type: "null" }] });
+export const researchSchema = envelope({ oneOf: [researchData, { type: "null" }] });
+export const riskSchema = envelope({ oneOf: [riskData, { type: "null" }] });
+export const reportSchema = envelope({ oneOf: [reportData, { type: "null" }] });

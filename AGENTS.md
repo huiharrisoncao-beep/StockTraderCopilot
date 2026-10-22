@@ -13,6 +13,9 @@
 
 1. `get_market_snapshot`，`universe` 用 `demo`。不要传入文件路径，不要改数据模式。
 2. 用上一步的 `run_id` 调用 `screen_stocks`。不要另传日期。
-3. 个股研究和报告工具还没有接入。不要假装调用它们。把筛选结果里的数字列出来，并说明个股研究未展开。
+3. 用同一个 `run_id` 调用 `get_stock_research_data`。不要传候选以外的代码。省略 `symbols` 时展开前 5 名。
+4. 调用 `check_stock_risk`。`warn` 不是卖出建议，`block` 只表示移出重点研究。
+5. 调用 `generate_daily_report`。报告里的数字以工具 JSON 为准，不要改写表格。行业一节是候选分布，不是强势板块排名。
+6. `valuation`、`news`、`fund_flow` 留空是未接入数据源，不是“暂无利空”。
 
 用户要求 ping 研究插件时，调用 `ping_research`，并原样转述返回值。不要把健康检查说成行情。

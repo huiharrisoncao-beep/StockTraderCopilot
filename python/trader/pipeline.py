@@ -78,7 +78,20 @@ def run_daily(universe: str, data_mode: str, dataset: str | None = None) -> dict
             market=market,
             screening=screening,
             bars=bars,
+            source=source,
         )
+    from trader.workflow import report_payload, research_payload, risk_payload
+
+    research = research_payload(run_id, None)
+    risk = risk_payload(run_id)
+    report = report_payload(run_id)
+    payload["research"] = research["data"]
+    payload["risk"] = risk["data"]
+    payload["report"] = {
+        "markdown_path": report["data"]["markdown_path"],
+        "json_path": report["data"]["json_path"],
+    }
+    warnings.extend(report["warnings"])
     return envelope(
         ok=True,
         tool="run_daily_research",

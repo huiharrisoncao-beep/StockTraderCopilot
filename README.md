@@ -120,4 +120,15 @@ node --experimental-strip-types --test harness/plugins/stock-research/test/runne
 
 插件入口已用与 DSH 相同的方式加载。三个工具都能注册；fixture 快照 `ok: true`，`data_date` 为 `2026-10-21`，上证收盘 `3713.03`；`screen_stocks` 按 `limit: 2` 切出 `300031`、`603626`。`dsh --dump-config` 能看到插件 `stock-research`。Profile 启动后才会在会话里挂上工具。
 
-在 UI 里把工作区加到本仓库后，`AGENTS.md` 才会进入会话。个股研究和报告工具留到 Day 4。
+在 UI 里把工作区加到本仓库后，`AGENTS.md` 才会进入会话。
+
+## Day 4 研究与报告
+
+插件增加 `get_stock_research_data`、`check_stock_risk` 和 `generate_daily_report`。研究卡不产生观点。`valuation`、`news`、`fund_flow` 固定为空。风险检查只输出规则命中。报告由 Python 渲染，行业一节标题是“候选行业分布”。
+
+```sh
+PYTHONPATH=python .venv/bin/python -m trader.cli daily --universe demo --data-mode fixture --json
+node --experimental-strip-types --test harness/plugins/stock-research/test/runner.test.mjs
+```
+
+`daily` 会在筛选后继续写研究卡、风险命中和 `reports/<data_date>/<run_id>.md`。模型失败时可以直接打开这个文件。免责声明固定为：研究结果仅用于演示研究流程，不构成投资建议，不保证收益，不触发任何交易。

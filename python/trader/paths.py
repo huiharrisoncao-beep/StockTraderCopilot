@@ -13,6 +13,10 @@ def data_dir() -> Path:
     return project_root() / "data"
 
 
+def reports_dir() -> Path:
+    return project_root() / "reports"
+
+
 def fixture_root() -> Path:
     return data_dir() / "fixtures"
 

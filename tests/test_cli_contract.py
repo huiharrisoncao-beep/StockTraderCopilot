@@ -17,6 +17,8 @@ def _redirect(monkeypatch, root: Path) -> None:
     monkeypatch.setattr("trader.pipeline.data_dir", lambda: data)
     monkeypatch.setattr("trader.pipeline.project_root", lambda: root)
     monkeypatch.setattr("trader.store.sqlite_store.data_dir", lambda: data)
+    monkeypatch.setattr("trader.reporting.render.reports_dir", lambda: root / "reports")
+    monkeypatch.setattr("trader.reporting.render.project_root", lambda: root)
     monkeypatch.setattr("trader.data.fixture_source.fixture_root", lambda: fixtures)
     monkeypatch.setattr("trader.data.fixture_source.current_fixture_index", lambda: fixtures / "current.json")
 

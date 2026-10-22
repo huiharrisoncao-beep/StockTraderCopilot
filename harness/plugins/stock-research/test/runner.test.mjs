@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-const { readConfig, runMarketSnapshot, runScreen } = await import(new URL("../src/runner.js", import.meta.url));
+const { readConfig, runMarketSnapshot, runReport, runResearch, runRisk, runScreen } = await import(new URL("../src/runner.js", import.meta.url));
 
 const config = readConfig({
   python: "/Users/harrisoncao/Workspace/StockTraderCopilot/.venv/bin/python",
@@ -32,6 +32,29 @@ test("fixture snapshot and screen stay off the network and agree", async () => {
   assert.equal(screened.data.candidates.length, 3);
   assert.equal(screened.data.candidates[0].symbol, "300031");
   assert.equal(screened.error, null);
+});
+
+test("research, risk, and report stay on the fixture", async () => {
+  const snapshot = await runMarketSnapshot(config, { universe: "demo" });
+  const research = await runResearch(config, { run_id: snapshot.run_id });
+  assert.equal(research.ok, true);
+  assert.equal(research.data.cards[0].symbol, "300031");
+  assert.equal(research.data.cards[0].valuation, null);
+  assert.deepEqual(research.data.cards[0].unavailable_fields, ["valuation", "news", "fund_flow"]);
+
+  const outside = await runResearch(config, { run_id: snapshot.run_id, symbols: ["000001"] });
+  assert.equal(outside.ok, false);
+  assert.equal(outside.error.code, "INVALID_ARGUMENT");
+
+  const risk = await runRisk(config, { run_id: snapshot.run_id });
+  assert.equal(risk.ok, true);
+  assert.equal(risk.data.flags.every((flag) => flag.severity === "warn" || flag.severity === "block"), true);
+
+  const report = await runReport(config, { run_id: snapshot.run_id });
+  assert.equal(report.ok, true);
+  assert.equal(report.data.cards[0].close, 26.36);
+  assert.match(report.data.disclaimer, /不构成投资建议/);
+  assert.equal(report.data.industry_distribution[0].industry, "未标注");
 });
 
 test("a different as_of is rejected by the fixture", async () => {

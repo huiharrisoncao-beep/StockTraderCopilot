@@ -13,6 +13,7 @@ from trader.data.fixture_source import load_manifest, resolve_dataset
 from trader.data.freeze import freeze_fixture
 from trader.pipeline import run_daily
 from trader.store.sqlite_store import connect, load_run
+from trader.workflow import failure_envelope, report_payload, research_payload, risk_payload
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,6 +32,19 @@ def main(argv: list[str] | None = None) -> int:
     screen = sub.add_parser("screen")
     screen.add_argument("--run-id", required=True)
     screen.add_argument("--json", action="store_true")
+
+    research = sub.add_parser("stock-research")
+    research.add_argument("--run-id", required=True)
+    research.add_argument("--symbols")
+    research.add_argument("--json", action="store_true")
+
+    risk = sub.add_parser("check-risk")
+    risk.add_argument("--run-id", required=True)
+    risk.add_argument("--json", action="store_true")
+
+    report = sub.add_parser("report")
+    report.add_argument("--run-id", required=True)
+    report.add_argument("--json", action="store_true")
 
     freeze = sub.add_parser("freeze-fixture")
     freeze.add_argument("--limit", type=int, default=150)
@@ -61,6 +75,12 @@ def main(argv: list[str] | None = None) -> int:
             payload = _snapshot(args.universe, args.data_mode, args.dataset)
         elif args.command == "screen":
             payload = _screen(args.run_id)
+        elif args.command == "stock-research":
+            payload = research_payload(args.run_id, _symbols(args.symbols))
+        elif args.command == "check-risk":
+            payload = risk_payload(args.run_id)
+        elif args.command == "report":
+            payload = report_payload(args.run_id)
         elif args.command == "freeze-fixture":
             target = freeze_fixture(limit=args.limit)
             payload = envelope(
@@ -136,8 +156,13 @@ def _failure(command: str, exc: TraderError) -> dict[str, Any]:
         "daily": "run_daily_research",
         "market-snapshot": "get_market_snapshot",
         "screen": "screen_stocks",
+        "stock-research": "get_stock_research_data",
+        "check-risk": "check_stock_risk",
+        "report": "generate_daily_report",
         "freeze-fixture": "freeze_fixture",
     }.get(command, command)
+    if command in {"stock-research", "check-risk", "report"}:
+        return failure_envelope(tool, exc)
     return envelope(
         ok=False,
         tool=tool,
@@ -147,6 +172,12 @@ def _failure(command: str, exc: TraderError) -> dict[str, Any]:
         data=None,
         error=error_body(exc),
     )
+
+
+def _symbols(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    return [item for item in value.split(",") if item]
 
 
 def _emit(payload: dict[str, Any]) -> None:

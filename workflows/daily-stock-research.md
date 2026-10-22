@@ -10,6 +10,8 @@
 
 1. 调用 `get_market_snapshot`。失败则停止，不编造行情。
 2. 用同一次 `run_id` 调用 `screen_stocks`。不要另传日期。
-3. 个股研究、风险检查和报告工具留到 Day 4。Day 3 只展示筛选 JSON。
+3. 用同一个 `run_id` 调用 `get_stock_research_data`，展开前 5 名。不补充财务、新闻或资金流。
+4. 调用 `check_stock_risk`。警告只进入风险段，不改写成交易指令。
+5. 调用 `generate_daily_report`。报告写到 `reports/<data_date>/<run_id>.md` 和同名 JSON。行业标题用“候选行业分布”。
 
 `ping_research` 仍是健康检查，不读取行情。

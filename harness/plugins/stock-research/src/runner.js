@@ -50,6 +50,37 @@ export async function runMarketSnapshot(config, args, signal) {
   return runPython(config, "get_market_snapshot", command, signal);
 }
 
+export async function runResearch(config, args, signal) {
+  if (args.run_id === undefined || !RUN_ID.test(args.run_id)) {
+    return failure("get_stock_research_data", "INVALID_ARGUMENT", "run_id 必须来自上一步，格式 research-YYYYMMDD-HHMMSS");
+  }
+  const command = ["stock-research", "--run-id", args.run_id, "--json"];
+  if (args.symbols !== undefined) {
+    if (!Array.isArray(args.symbols) || args.symbols.length < 1 || args.symbols.length > 5) {
+      return failure("get_stock_research_data", "INVALID_ARGUMENT", "symbols 必须是 1 到 5 只本次候选");
+    }
+    if (args.symbols.some((symbol) => !/^\d{6}$/.test(symbol)) || new Set(args.symbols).size !== args.symbols.length) {
+      return failure("get_stock_research_data", "INVALID_ARGUMENT", "symbols 必须是不重复的 6 位代码");
+    }
+    command.push("--symbols", args.symbols.join(","));
+  }
+  return runPython(config, "get_stock_research_data", command, signal);
+}
+
+export async function runRisk(config, args, signal) {
+  if (args.run_id === undefined || !RUN_ID.test(args.run_id)) {
+    return failure("check_stock_risk", "INVALID_ARGUMENT", "run_id 必须来自上一步，格式 research-YYYYMMDD-HHMMSS");
+  }
+  return runPython(config, "check_stock_risk", ["check-risk", "--run-id", args.run_id, "--json"], signal);
+}
+
+export async function runReport(config, args, signal) {
+  if (args.run_id === undefined || !RUN_ID.test(args.run_id)) {
+    return failure("generate_daily_report", "INVALID_ARGUMENT", "run_id 必须来自上一步，格式 research-YYYYMMDD-HHMMSS");
+  }
+  return runPython(config, "generate_daily_report", ["report", "--run-id", args.run_id, "--json"], signal);
+}
+
 export async function runScreen(config, args, signal) {
   if (args.run_id === undefined || !RUN_ID.test(args.run_id)) {
     return failure("screen_stocks", "INVALID_ARGUMENT", "run_id 必须来自上一步，格式 research-YYYYMMDD-HHMMSS");

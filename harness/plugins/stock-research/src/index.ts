@@ -2,8 +2,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { readConfig, runMarketSnapshot, runScreen } from "./runner.js";
-import { marketSnapshotSchema, screenSchema } from "./schema.js";
+import { readConfig, runMarketSnapshot, runReport, runResearch, runRisk, runScreen } from "./runner.js";
+import { marketSnapshotSchema, reportSchema, researchSchema, riskSchema, screenSchema } from "./schema.js";
 
 const dshHome = process.env.DSH_HOME || join(homedir(), ".dsh");
 const toolsEntry = pathToFileURL(
@@ -113,6 +113,77 @@ export function apply(ctx: ToolHost, rawConfig: {
     ) {
       const payload = await runScreen(config, args, exec?.signal);
       return accept(screenSchema, "screen_stocks", payload);
+    },
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "get_stock_research_data",
+    description: "Expand up to 5 candidates from this run into research cards. Omit symbols to use the stored top 5. Do not pass symbols that were not candidates. valuation, news, and fund_flow are always null because those sources are not connected. Do not invent fundamentals or news. This is not a trade order.",
+    parameters: {
+      run_id: {
+        type: "string",
+        required: true,
+        description: "run_id returned by get_market_snapshot.",
+      },
+      symbols: {
+        type: "array",
+        items: { type: "string" },
+        description: "Optional 6-digit symbols from this run's candidates, at most 5. Omit to research the stored top 5.",
+      },
+    },
+    output: {
+      schema: researchSchema,
+      render: (_args: unknown, value: Envelope) => [
+        { type: "text", text: JSON.stringify(value) },
+      ],
+    },
+    async execute(args: { run_id: string; symbols?: string[] }, exec: { signal?: AbortSignal }) {
+      const payload = await runResearch(config, args, exec?.signal);
+      return accept(researchSchema, "get_stock_research_data", payload);
+    },
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "check_stock_risk",
+    description: "Check rule hits for the current run. Call it after get_stock_research_data. block removes a card from the focus list. warn is not a sell instruction. Do not pass symbols or file paths.",
+    parameters: {
+      run_id: {
+        type: "string",
+        required: true,
+        description: "run_id returned by get_market_snapshot.",
+      },
+    },
+    output: {
+      schema: riskSchema,
+      render: (_args: unknown, value: Envelope) => [
+        { type: "text", text: JSON.stringify(value) },
+      ],
+    },
+    async execute(args: { run_id: string }, exec: { signal?: AbortSignal }) {
+      const payload = await runRisk(config, args, exec?.signal);
+      return accept(riskSchema, "check_stock_risk", payload);
+    },
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "generate_daily_report",
+    description: "Render the stored run to Markdown and JSON. Quote numbers only from this result. Do not rewrite table values. The disclaimer means this is not investment advice and not an order.",
+    parameters: {
+      run_id: {
+        type: "string",
+        required: true,
+        description: "run_id returned by get_market_snapshot.",
+      },
+    },
+    output: {
+      schema: reportSchema,
+      render: (_args: unknown, value: Envelope) => [
+        { type: "text", text: JSON.stringify(value) },
+      ],
+    },
+    async execute(args: { run_id: string }, exec: { signal?: AbortSignal }) {
+      const payload = await runReport(config, args, exec?.signal);
+      return accept(reportSchema, "generate_daily_report", payload);
     },
   }));
 }
