@@ -14,12 +14,13 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@stock-trader/dsh-plugin-run-store": "link:../plugins/run-store",
-    "@stock-trader/dsh-plugin-market-data": "link:../plugins/market-data",
-    "@stock-trader/dsh-plugin-screening": "link:../plugins/screening",
-    "@stock-trader/dsh-plugin-research-report": "link:../plugins/research-report",
-    "@stock-trader/dsh-plugin-guardrails": "link:../plugins/guardrails",
-    "@stock-trader/dsh-plugin-skill": "link:../plugins/skill",
-    "@stock-trader/dsh-plugin-command": "link:../plugins/command"
+    "@stock-trader/dsh-plugin-shared": "file:../plugins/shared",
+    "@stock-trader/dsh-plugin-run-store": "file:../plugins/run-store",
+    "@stock-trader/dsh-plugin-market-data": "file:../plugins/market-data",
+    "@stock-trader/dsh-plugin-screening": "file:../plugins/screening",
+    "@stock-trader/dsh-plugin-research-report": "file:../plugins/research-report",
+    "@stock-trader/dsh-plugin-guardrails": "file:../plugins/guardrails",
+    "@stock-trader/dsh-plugin-skill": "file:../plugins/skill",
+    "@stock-trader/dsh-plugin-command": "file:../plugins/command"
   }
 }

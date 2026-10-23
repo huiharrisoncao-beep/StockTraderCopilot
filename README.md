@@ -189,7 +189,7 @@ Day 1 笔记里的 `disable-model-invocation` 已经过时。当前 [.dsh/skills
 
 ```sh
 cd harness/plugins && pnpm install            # 链接共享包
-dsh plugin --profile trading-research install # 链接 bundle 与七个插件
+dsh plugin --profile trading-research install # Profile 只安装这一个 bundle
 dsh --profile trading-research --dump-config | grep -A1 'dsh-trading-bundle'
 node --experimental-strip-types --test harness/plugins/test/plugins.test.mjs
 node --experimental-strip-types --test harness/plugins/test/runner.test.mjs

@@ -12,7 +12,7 @@
     "dsh": "0.2.1-rc.2"
   },
   "dependencies": {
-    "@stock-trader/dsh-plugin-shared": "link:../shared"
+    "@stock-trader/dsh-plugin-shared": "file:../shared"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.0.5"

@@ -23,19 +23,51 @@ harness/
     cordis.patch.yml            # 一次 insert 七个插件
 ```
 
-每个插件是独立的 npm 包，`exports` 指向自己的 `src/index.ts`；都依赖 `@stock-trader/dsh-plugin-shared`（`link:../shared`）。`pnpm install` 在 `harness/plugins` 下把共享包链接进每个插件的 `node_modules`，所以插件用包名 `@stock-trader/dsh-plugin-shared/...` 引用共享代码。
+每个插件是独立的 npm 包，`exports` 指向自己的 `src/index.ts`；都依赖 `@stock-trader/dsh-plugin-shared`（`file:../shared`）。在 `harness/plugins` 这个 workspace 里，`pnpm install` 仍把共享包符号链接进每个插件的 `node_modules`，所以本地改共享代码立刻生效，插件用包名 `@stock-trader/dsh-plugin-shared/...` 引用共享代码。
 
 ## 七个插件与扩展点
 
-| 插件包 | 扩展点 | 作用 |
+| 插件包 | 扩展点 | 具体工作 |
 |---|---|---|
-| `@stock-trader/dsh-plugin-run-store` | **服务（Service）** | 提供 `researchRunStore`：持有配置（Python 路径、数据模式、超时）并封装 Python CLI。唯一带 config 的插件 |
-| `@stock-trader/dsh-plugin-market-data` | 工具 | `ping_research`、`get_market_snapshot` |
-| `@stock-trader/dsh-plugin-screening` | 工具 | `screen_stocks` |
-| `@stock-trader/dsh-plugin-research-report` | 工具 | `get_stock_research_data`、`check_stock_risk`、`generate_daily_report` |
-| `@stock-trader/dsh-plugin-guardrails` | **系统提示（systemPrompt）** | 注入合规护栏段：不给买卖指令、只引用工具 JSON、`data_date` 不是“今天” |
-| `@stock-trader/dsh-plugin-skill` | **技能（skills）** | 从插件内注册 `stock-research-pipeline` 技能（与文件系统的 `daily-stock-research` 分开命名，避免被项目技能遮住） |
-| `@stock-trader/dsh-plugin-command` | **斜杠命令（commands）** | `/research` 一键按固定提示词发起研究 |
+| `@stock-trader/dsh-plugin-run-store` | **服务（Service）** | 持有唯一配置（Python 路径、`dataMode`、超时）。提供 `researchRunStore`，把五步调用转成 `trader.cli` 的 `market-snapshot` / `screen` / `stock-research` / `check-risk` / `report`。不注册工具 |
+| `@stock-trader/dsh-plugin-market-data` | 工具 | `ping_research` 只做健康检查，不读行情。`get_market_snapshot` 读取冻结样本，写出 `run_id`、指数、涨跌家数、`data_date` 和 warnings，schema 校验后才交给模型 |
+| `@stock-trader/dsh-plugin-screening` | 工具 | `screen_stocks` 只接受已有 `run_id`，按 `trend_volume_v1` 读出候选（可限 1–10 只）。候选为空是合法结果；不另传日期，也不改规则重跑 |
+| `@stock-trader/dsh-plugin-research-report` | 工具 | `get_stock_research_data` 把前 5 名展开成研究卡（估值 / 新闻 / 资金流固定为空）；`check_stock_risk` 检查规则命中，`block` 移出重点、`warn` 不是卖出；`generate_daily_report` 把这次 run 渲染成 Markdown 和 JSON |
+| `@stock-trader/dsh-plugin-guardrails` | **系统提示（systemPrompt）** | 不注册工具。在系统提示插入 `stock-research:guardrails`：禁止买卖指令和目标价；数字只能引用工具 JSON；`data_date` 不是“今天”；空字段不是“暂无利空” |
+| `@stock-trader/dsh-plugin-skill` | **技能（skills）** | 注册 `stock-research-pipeline`（模型和用户都可调用）。内容是七步规程：快照失败即停，同一 `run_id` 贯穿，不研究候选外的代码，摘要只复述观察条件。与磁盘上的 `daily-stock-research` 分开命名，避免被挡住 |
+| `@stock-trader/dsh-plugin-command` | **斜杠命令（commands）** | `/research` 把固定提示词作为一条新的用户消息送进当前会话，`universe` 默认 `demo`。回执写明只引用工具数字、不给买卖指令 |
+
+## 每个插件完成的业务
+
+| 插件 | 研究员工作里的那一段 |
+|---|---|
+| run-store | 一次盘后研究的案卷。开案时记下数据模式和截止日；选股、个股、风险、报告都读同一份档案，避免前后数字对不上 |
+| market-data | 先看市场。确认样本截止哪一天、指数收在哪里、涨跌家数如何，再决定进不进选股。健康检查不算研究 |
+| screening | 按写明的规则选股，不是模型挑票。历史够、多头排列、20 日涨幅落在区间、放量但不极端。按涨幅取前 10 做候选；没有票也是结论 |
+| research-report | 研究收尾三段。个股卡只摆事实（价格、均线、动量、量能、距阶段高点），不写观点、不补财务和新闻。风险只报规则命中：数据缺失就移出重点，走弱、异常波动、行业扎堆、样本过期只警示。最后落一份可复核的盘后报告 |
+| guardrails | 职业边界。可以写观察条件，不能下买卖指令、目标价或仓位；没接到的数据不能说成“暂无利空”；空候选不能改规则再找一只更好看的 |
+| skill | 作业手册。用户说盘后研究、每日研究或选股报告时，按固定顺序做完；某步失败就停；摘要只复述工具里的数字和观察条件 |
+| command | 开工按钮。`/research` 按当天规程开始这次盘后研究，默认用演示股票池 |
+
+## 一次盘后研究怎么走
+
+```text
+用户 /research 或“盘后研究”
+        │
+        ▼
+     Agent                         Context
+  读护栏和技能          ┌──────────────────────────────────┐
+  按顺序调工具          │ guardrails   skill               │
+  只解释 JSON           │ command                          │
+        │               │ market-data → screening → research-report
+        │               │            inject               │
+        └──────────────▶│           run-store              │
+                        └──────────────┬───────────────────┘
+                                       ▼
+                              Python · SQLite · 报告
+```
+
+command 把固定提示词送进会话。Agent 从 Context 读取 guardrails 和 skill，再依次调用三个工具插件。三个工具插件都不自己起进程，而是 inject `researchRunStore`。run-store 用同一个 `run_id` 调 Python。结果回到 Agent，Agent 只做摘要，不改数字、不下单。
 
 ## bundle 怎么加载
 
@@ -44,6 +76,9 @@ bundle 是一个 npm 包，`package.json` 里写 `dsh.bundle.patch` 指向一份
 ```jsonc
 // ~/.dsh/profiles/trading-research/package.json
 {
+  "dependencies": {
+    "@stock-trader/dsh-trading-bundle": "link:<repo>/harness/bundle"
+  },
   "dsh": { "profile": { "bundles": [
     "@deepseek-ai/dsh-base",
     "@deepseek-ai/dsh-web-app",
@@ -61,7 +96,9 @@ bundle 是一个 npm 包，`package.json` 里写 `dsh.bundle.patch` 指向一份
   ...（七条）
 ```
 
-> pnpm 的 `link:` 只建符号链接、不安装被链接包自己的依赖。所以 Profile 的 `dependencies` 同时 `link:` 了 bundle 和七个插件包，保证 patch 里的插件名在 Profile 中可解析；共享包则由 `harness/plugins` 的 workspace 安装解析。
+插件不写进 Profile 的 `package.json`。bundle 的 `dependencies` 用 `file:` 指向七个插件和共享包；Profile 只 `link:` 这一个 bundle，并把它写进 `dsh.profile.bundles`。
+
+安装时还要放一份 [profile.pnpmfile.cjs](../harness/bundle/profile.pnpmfile.cjs) 到 Profile 目录（文件名是 `.pnpmfile.cjs`）。原因有两层：pnpm 的 `link:` 不安装被链接包自己的依赖；直接用 `file:` 又会把插件的 `.ts` 源码拷进 `node_modules`，而 Node 拒绝在 `node_modules` 里剥离类型。这份 pnpmfile 在安装时把 bundle 的依赖提升成指向仓库源码的符号链接，`package.json` 里仍然只有 bundle。Profile 的 `pnpm-workspace.yaml` 要用 `nodeLinker: isolated`；`hoisted` 会清掉插件目录里指向共享包的链接。
 
 ## 协作：服务是核心
 
@@ -90,7 +127,8 @@ research-run-store ──provides──> researchRunStore (service)
 # 1) 链接 workspace（把共享包链进每个插件）
 cd harness/plugins && pnpm install
 
-# 2) Profile 里加 bundle（已写好 package.json 的 bundles 与 link: 依赖）
+# 2) Profile 只依赖这一个 bundle，并用 pnpmfile 提升 bundle 的依赖
+cp harness/bundle/profile.pnpmfile.cjs ~/.dsh/profiles/trading-research/.pnpmfile.cjs
 dsh plugin --profile trading-research install
 
 # 3) 组合层可见七条插件

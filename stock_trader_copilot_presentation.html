@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>使用 DeepSeek Harness 定制交易研究员工作流平台</title>
+<style>
+  :root{
+    --bg:#0f1226; --card:#ffffff; --ink:#1b2340; --muted:#5b6690;
+    --accent:#6c5ce7; --accent2:#2f80ed; --good:#1f9d6b; --warn:#d98324;
+    --line:#e5e8f4; --chip:#f1f3fb; --code:#0b1020;
+    --grad:linear-gradient(135deg,#6c5ce7 0%,#2f80ed 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 800px at 15% -10%,#20264d 0%,#0f1226 55%) fixed;
+    color:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .stage{width:min(1120px,96vw);height:min(630px,92vh);position:relative}
+  .slide{
+    position:absolute;inset:0;background:var(--card);border-radius:20px;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);padding:46px 56px;overflow:auto;
+    opacity:0;transform:translateY(14px) scale(.985);pointer-events:none;
+    transition:opacity .35s ease,transform .35s ease;
+  }
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  .kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:40px;line-height:1.15;margin:.35em 0 .25em}
+  h2{font-size:29px;line-height:1.2;margin:.1em 0 .55em}
+  h3{font-size:18px;margin:.2em 0}
+  p{color:var(--muted);line-height:1.6;margin:.4em 0}
+  ul{margin:.3em 0 .3em;padding-left:1.1em}
+  li{margin:.42em 0;line-height:1.5}
+  b,strong{color:var(--ink)}
+  .lead{font-size:18px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  code,.mono{font-family:"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  code{background:var(--chip);color:#3b2f91;padding:.08em .4em;border-radius:6px;font-size:.9em}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .card{background:#fbfcff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h3{display:flex;align-items:center;gap:8px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--grad);padding:3px 9px;border-radius:999px}
+  .pill{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:var(--chip);border:1px solid var(--line);padding:3px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  table.duty{font-size:13px}
+  table.duty th,table.duty td{padding:6px 8px}
+  table.duty td:first-child{white-space:nowrap;font-weight:800}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  tr:last-child td{border-bottom:none}
+  .center{display:flex;flex-direction:column;justify-content:center;height:100%}
+  .cover{background:var(--grad);color:#fff}
+  .cover .kicker,.cover code{color:#e9e6ff}
+  .cover h1{font-size:46px}
+  .cover p{color:#e9e9ff}
+  .cover .chips{margin-top:18px}
+  .cover .pill{color:#fff;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28)}
+  /* ladder diagram */
+  .ladder{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .rung{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;background:#fbfcff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .rung .n{font-weight:800;color:var(--ink);font-size:15px}
+  .rung .d{color:var(--muted);font-size:13.5px;line-height:1.45}
+  .rung.lv0{background:linear-gradient(135deg,#efeaff,#eaf1ff)}
+  .arrowcol{display:flex;justify-content:center;color:var(--accent);font-weight:800;margin:-4px 0}
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .step{flex:1 1 0;min-width:120px;background:#fbfcff;border:1px solid var(--line);border-radius:12px;padding:12px 12px}
+  .step .t{font-weight:800;font-size:14px}
+  .step .s{font-size:12px;color:var(--muted);margin-top:4px}
+  .chev{display:flex;align-items:center;color:var(--accent);font-weight:800;font-size:20px}
+  .svc{background:linear-gradient(135deg,#1b2340,#2a356b);color:#fff;border-radius:14px;padding:16px 18px}
+  .svc code{background:rgba(255,255,255,.14);color:#fff}
+  .note{border-left:4px solid var(--accent);background:#f6f4ff;border-radius:10px;padding:10px 14px;color:#443a7a;font-size:14px}
+  .warnbox{border-left:4px solid var(--warn);background:#fff6ec;border-radius:10px;padding:10px 14px;color:#7a5417;font-size:14px}
+  pre{background:var(--code);color:#e7ecff;border-radius:12px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.5}
+  pre .c{color:#7f8bbd}
+  pre .k{color:#8ad0ff}
+  pre .g{color:#86e1b0}
+  .kv{display:flex;gap:10px;flex-wrap:wrap}
+  .kv .k{background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+  .kv .k b{display:block;color:var(--ink);font-size:16px}
+  /* HUD */
+  .hud{position:fixed;left:0;right:0;bottom:14px;display:flex;align-items:center;justify-content:center;gap:14px;z-index:20}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;max-width:60vw;justify-content:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);border:none;cursor:pointer;padding:0}
+  .dot.on{background:#fff;transform:scale(1.25)}
+  .btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:7px 12px;cursor:pointer;font-size:13px}
+  .btn:hover{background:rgba(255,255,255,.22)}
+  .counter{position:fixed;top:16px;right:22px;color:rgba(255,255,255,.7);font-size:13px;z-index:20;font-variant-numeric:tabular-nums}
+  .brandbar{position:fixed;top:16px;left:22px;color:rgba(255,255,255,.7);font-size:13px;z-index:20}
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);z-index:30;transition:width .3s ease}
+  .foot{position:absolute;bottom:16px;left:56px;right:56px;display:flex;justify-content:space-between;color:#b8bfdd;font-size:12px}
+  .foot .r{color:var(--accent)}
+  .board{display:grid;grid-template-columns:196px 1fr;gap:12px;align-items:stretch}
+  .lane{display:flex;flex-direction:column;gap:8px}
+  .lane .node{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .ctxbox{border:2px solid #6c5ce7;border-radius:16px;padding:10px 12px;background:#f7f6ff}
+  .ctxbox .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .ctxbox .hd b{color:#3b2f91;font-size:15px}
+  .ctxbox .hd span{font-size:12px;color:#5b6690}
+  .prow{display:grid;gap:6px;margin-bottom:6px}
+  .prow.c2{grid-template-columns:1fr 1fr}
+  .prow.c3{grid-template-columns:1fr 1fr 1fr}
+  .pnode{background:#fff;border:1px solid #ddd7ff;border-radius:10px;padding:7px 8px;font-size:12px;line-height:1.35;color:#5b6690}
+  .pnode strong{display:block;color:#1b2340;font-size:13px}
+  .pnode.hub{background:#1b2340;color:#d7ddff;border-color:#1b2340}
+  .pnode.hub strong{color:#fff}
+  .pybox{background:#fff6ec;border:1px solid #f0d3b0;border-radius:10px;padding:8px 10px;font-size:12.5px;color:#7a5417;line-height:1.4}
+  .seq{display:flex;gap:6px;margin-top:10px}
+  .seq span{flex:1;font-size:11.5px;line-height:1.35;background:#f1f3fb;border:1px solid var(--line);border-radius:8px;padding:6px 7px;color:#3d4670}
+  .seq b{color:var(--accent)}
+  @media (max-width:720px){ .slide{padding:26px 22px} h1{font-size:30px} .cover h1{font-size:34px} .g2,.g3,.board{grid-template-columns:1fr} .rung{grid-template-columns:110px 1fr} .seq{flex-direction:column} }
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="brandbar">DeepSeek Harness · 交易研究员工作流平台</div>
+<div class="counter" id="counter">1 / 21</div>
+<div class="stage" id="stage">
+
+  <!-- 1 Cover -->
+  <section class="slide cover center active">
+    <div class="kicker">DeepSeek Harness 实践分享</div>
+    <h1>使用 DeepSeek Harness 定制<br/>交易研究员工作流平台</h1>
+    <p class="lead">把“研究员的一天”做成一条可重复、可追溯的工具链——<br/>Python 计算，Harness 编排，模型只做解释，不替人下单。</p>
+    <div class="chips">
+      <span class="pill">Agent · Runtime · Profile</span>
+      <span class="pill">Context · Bundle · Plugin</span>
+      <span class="pill">7 个插件 · 4 类扩展点</span>
+    </div>
+    <div class="foot"><span>演示文稿</span><span class="r">← / → / 空格 翻页</span></div>
+  </section>
+
+  <!-- 2 Agenda -->
+  <section class="slide">
+    <div class="kicker">今天的路线</div>
+    <h2>三步走</h2>
+    <div class="grid g3">
+      <div class="card"><span class="tag">1 · 回顾</span><h3>Harness 核心概念</h3><p>Agent / Runtime / Profile / Context / Bundle / Plugin，以及它们怎么拼在一起。</p></div>
+      <div class="card"><span class="tag">2 · 实践</span><h3>交易研究员平台</h3><p>用 DSH 为“交易研究员”这个角色定制工作流；详解 agent–profile–bundle–plugin 与插件间交互。</p></div>
+      <div class="card"><span class="tag">3 · 收尾</span><h3>验证与要点</h3><p>怎么验证、演示怎么走、设计取舍与下一步。</p></div>
+    </div>
+    <div class="note" style="margin-top:16px">一句话主线：<b>Profile 组装能力，Plugin 暴露能力，Python 计算，模型解释</b>——没有 <code>workflow.yaml</code>，工作流由配置和插件定义。</div>
+  </section>
+
+  <!-- 3 Concepts overview -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 回顾</div>
+    <h2>六个概念，一句话各讲清</h2>
+    <div class="grid g2">
+      <div class="card"><h3>🧠 Agent（智能体）</h3><p>按一轮轮循环工作：决定调哪个工具、读系统提示、按需加载技能。它不写死能力，而是用 Runtime 给的那一套。</p></div>
+      <div class="card"><h3>⚙️ Runtime（运行时）</h3><p>把组合好的 Profile 实例化出来的运行环境：一棵 Cordis Context 树 + 生命周期，承载组装后的能力。</p></div>
+      <div class="card"><h3>📦 Profile（配置档）</h3><p>一叠<b>有序的 bundle patch 层</b> + 你自己的覆盖，放在 <code>~/.dsh/profiles</code>。<code>dsh --profile &lt;name&gt;</code> 启动它。</p></div>
+      <div class="card"><h3>🔌 Context（上下文）</h3><p>Cordis 的服务容器 / 依赖注入层。插件在它上面 <b>provide</b> 和 <b>inject</b> 服务：tools、systemPrompt、skills、commands，及自定义服务。</p></div>
+      <div class="card"><h3>🧱 Bundle（捆绑包）</h3><p>一个 npm 包，带 <code>dsh.bundle.patch</code> 指向 patch 文件；被 Profile 的 <code>bundles</code> 列出后，作为<b>一个组合层</b>生效。</p></div>
+      <div class="card"><h3>🧩 Plugin（插件）</h3><p>一个 Cordis 插件（<code>name</code> / <code>apply</code> / <code>inject</code>）。在 Context 上注册工具、提供服务、注入系统提示、技能或命令。</p></div>
+    </div>
+  </section>
+
+  <!-- 4 Relationship ladder -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 回顾</div>
+    <h2>它们是怎么拼起来的</h2>
+    <div class="ladder">
+      <div class="rung lv0"><div class="n">🧠 Agent</div><div class="d">运行在 Runtime 上，使用 Context 里插件注册的工具 / 系统提示 / 技能 / 命令。</div></div>
+      <div class="arrowcol">▲ 运行于</div>
+      <div class="rung lv0"><div class="n">⚙️ Runtime</div><div class="d">把组合好的 Profile 实例化；构建并持有下面的 Context。</div></div>
+      <div class="arrowcol">▲ 构建</div>
+      <div class="rung"><div class="n">🔌 Context</div><div class="d">服务容器。Plugin 在其上 provide / inject：<code>tools</code> <code>systemPrompt</code> <code>skills</code> <code>commands</code> + 自定义服务。</div></div>
+      <div class="arrowcol">▲ mount（apply）</div>
+      <div class="rung"><div class="n">🧩 Plugins</div><div class="d">一条条 <code>- id / name / config</code> 的行；每个插件在 Context 上注册能力。</div></div>
+      <div class="arrowcol">▲ patch 插入</div>
+      <div class="rung"><div class="n">🧱 Bundles</div><div class="d">每个 bundle 的 <code>cordis.patch.yml</code> 作为一层，插入若干 plugin 行。</div></div>
+      <div class="arrowcol">▲ 列出</div>
+      <div class="rung lv0"><div class="n">📦 Profile</div><div class="d"><code>dsh.profile.bundles</code> 有序列出 bundles；再叠加用户 patch。<code>dsh --profile</code> 启动。</div></div>
+    </div>
+  </section>
+
+  <!-- 5 Boot pipeline -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 回顾</div>
+    <h2>从启动到跑起来</h2>
+    <div class="flow">
+      <div class="step"><div class="t">① 启动</div><div class="s"><code>dsh --profile trading-research</code></div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">② 读 bundles</div><div class="s">dsh-base · dsh-web-app · 自定义 bundle</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">③ 组合</div><div class="s">各 bundle 的 patch 叠成<b>扁平插件列表</b></div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">④ 挂载</div><div class="s">Runtime 在 Context 上逐个 <code>apply</code> 插件</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">⑤ 就绪</div><div class="s">Agent 看到工具/提示/技能/命令</div></div>
+    </div>
+    <div class="note" style="margin-top:16px"><code>dsh --profile trading-research --dump-config</code> 打印的，就是第 ③ 步组合出来的那棵树——演示时直接给观众看“比默认多了哪些层”。</div>
+  </section>
+
+  <!-- 6 Part 2 intro: the role -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>为“交易研究员”这个角色定制平台</h2>
+    <p class="lead">研究员的日常不是“让模型猜一只股票”，而是一条可重复的流水线：</p>
+    <div class="flow" style="margin-top:6px">
+      <div class="step"><div class="t">市场环境</div><div class="s">看大盘与广度</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">量化选股</div><div class="s">按规则筛候选</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">个股研究</div><div class="s">展开研究卡</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">风险检查</div><div class="s">规则命中</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">生成报告</div><div class="s">可追溯留痕</div></div>
+    </div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card"><h3>Python 计算</h3><p>指标、筛选、风险、报告都在 <code>trader.cli</code> 里算，结果是一个 JSON 信封。</p></div>
+      <div class="card"><h3>Harness 编排</h3><p>插件把每一步暴露成工具，Agent 按顺序调用、解释结果。</p></div>
+      <div class="card"><h3>模型只解释</h3><p>只引用工具返回的数字；不下单、不补造行情。</p></div>
+    </div>
+  </section>
+
+  <!-- 7 Architecture overview -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>架构总览：一条链贯穿</h2>
+    <div class="ladder">
+      <div class="rung lv0"><div class="n">📦 Profile<br/><span class="small muted">trading-research</span></div><div class="d"><code>bundles: [ dsh-base, dsh-web-app, <b>@stock-trader/dsh-trading-bundle</b> ]</code></div></div>
+      <div class="arrowcol">▲ 列出</div>
+      <div class="rung"><div class="n">🧱 Bundle</div><div class="d"><code>dsh-trading-bundle</code> 的 <code>cordis.patch.yml</code> 一次 <code>insert</code> 七个插件（只有 run-store 带 config）。</div></div>
+      <div class="arrowcol">▲ 插入</div>
+      <div class="rung"><div class="n">🧩 7 Plugins</div><div class="d">服务 × 1、工具 × 3、系统提示 × 1、技能 × 1、命令 × 1。</div></div>
+      <div class="arrowcol">▲ 调用</div>
+      <div class="rung lv0"><div class="n">🐍 Shared + Python</div><div class="d">共享 lib 包做桥接；<code>trader.cli</code>（fixture 模式）计算并写 SQLite 与报告。</div></div>
+    </div>
+    <div class="note" style="margin-top:14px">一个本地 <b>pnpm workspace</b>：七个独立插件包 + 一个共享 <code>@stock-trader/dsh-plugin-shared</code> 包；再用一个 <b>bundle</b> 作为加载层装进 Profile。</div>
+  </section>
+
+  <!-- 8 Seven plugins table -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>七个插件 · 四类扩展点</h2>
+    <table>
+      <thead><tr><th>插件包</th><th>扩展点</th><th>提供的能力</th></tr></thead>
+      <tbody>
+        <tr><td><code>run-store</code></td><td><span class="pill">服务</span></td><td>提供 <code>researchRunStore</code>：持有配置 + 封装 Python。<b>唯一带 config</b></td></tr>
+        <tr><td><code>market-data</code></td><td><span class="pill">工具</span></td><td><code>ping_research</code> · <code>get_market_snapshot</code></td></tr>
+        <tr><td><code>screening</code></td><td><span class="pill">工具</span></td><td><code>screen_stocks</code></td></tr>
+        <tr><td><code>research-report</code></td><td><span class="pill">工具</span></td><td><code>get_stock_research_data</code> · <code>check_stock_risk</code> · <code>generate_daily_report</code></td></tr>
+        <tr><td><code>guardrails</code></td><td><span class="pill">系统提示</span></td><td>注入合规护栏段，<b>不注册任何工具</b></td></tr>
+        <tr><td><code>skill</code></td><td><span class="pill">技能</span></td><td>插件内注册 <code>stock-research-pipeline</code></td></tr>
+        <tr><td><code>command</code></td><td><span class="pill">命令</span></td><td><code>/research</code> 一键发起盘后研究</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:10px">“插件 ≠ 只会加工具”——服务、系统提示、技能、斜杠命令都是插件能插进去的扩展点。</p>
+  </section>
+
+  <!-- 8b plugin duties -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>每个插件具体完成什么</h2>
+    <table class="duty">
+      <thead><tr><th>插件</th><th>实际工作</th></tr></thead>
+      <tbody>
+        <tr><td>run-store</td><td>持有<b>唯一配置</b>（Python 路径、<code>fixture/live</code>、120 秒超时）。提供 <code>researchRunStore</code>，把五步调用转成 <code>trader.cli</code>：<code>market-snapshot</code> / <code>screen</code> / <code>stock-research</code> / <code>check-risk</code> / <code>report</code>。不注册工具。</td></tr>
+        <tr><td>market-data</td><td><code>ping_research</code> 只做健康检查，不读行情。<code>get_market_snapshot</code> 读取冻结样本，写出 <code>run_id</code>、指数、涨跌家数、<code>data_date</code> 和 warnings，schema 校验通过后才交给模型。</td></tr>
+        <tr><td>screening</td><td>只接受已有 <code>run_id</code>。按 <code>trend_volume_v1</code> 读出候选（可限 1–10 只）。候选为空是合法结果；不另传日期，也不改规则重跑。</td></tr>
+        <tr><td>research-report</td><td>三件事：把前 5 名展开成研究卡（估值 / 新闻 / 资金流固定为空）；检查规则命中，<code>block</code> 移出重点、<code>warn</code> 不是卖出；把这次 run 渲染成 Markdown 和 JSON。</td></tr>
+        <tr><td>guardrails</td><td>不加工具。在系统提示里插入 <code>stock-research:guardrails</code>：禁止买卖指令和目标价；数字只能引用工具 JSON；<code>data_date</code> 不是“今天”；空字段不是“暂无利空”。</td></tr>
+        <tr><td>skill</td><td>注册 <code>stock-research-pipeline</code>（模型和用户都可调用）。内容是七步规程：快照失败即停，同一 <code>run_id</code> 贯穿，不研究候选外的代码，摘要只复述观察条件。与磁盘上的 <code>daily-stock-research</code> 分开，避免被挡住。</td></tr>
+        <tr><td>command</td><td>注册 <code>/research</code>。把固定提示词作为一条新的用户消息送进当前会话，<code>universe</code> 默认 <code>demo</code>。回执写明：只引用工具数字，不给买卖指令。</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:8px">三个工具插件自己不读配置、不起 Python。计算都进 run-store，再由 Python 写入同一份 SQLite。</p>
+  </section>
+
+  <!-- 8c plugin business duties -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>每个插件完成的业务</h2>
+    <table class="duty">
+      <thead><tr><th>插件</th><th>研究员工作里的那一段</th></tr></thead>
+      <tbody>
+        <tr><td>run-store</td><td>一次盘后研究的<b>案卷</b>。开案时记下数据模式和截止日；选股、个股、风险、报告都读同一份档案，避免前后数字对不上。</td></tr>
+        <tr><td>market-data</td><td><b>先看市场</b>。确认样本截止哪一天、指数收在哪里、涨跌家数如何，再决定进不进选股。健康检查不算研究。</td></tr>
+        <tr><td>screening</td><td><b>按写明的规则选股</b>，不是模型挑票。历史够、多头排列、20 日涨幅落在区间、放量但不极端。按涨幅取前 10 做候选；没有票也是结论。</td></tr>
+        <tr><td>research-report</td><td><b>研究收尾三段</b>：个股卡只摆事实（价格、均线、动量、量能、距阶段高点），不写观点、不补财务和新闻；风险只报规则命中，数据缺失就移出重点，走弱、异常波动、行业扎堆、样本过期只警示；最后落一份可复核的盘后报告。</td></tr>
+        <tr><td>guardrails</td><td><b>职业边界</b>。可以写观察条件，不能下买卖指令、目标价或仓位；没接到的数据不能说成“暂无利空”；空候选不能改规则再找一只更好看的。</td></tr>
+        <tr><td>skill</td><td><b>作业手册</b>。用户说盘后研究、每日研究或选股报告时，按固定顺序做完；某步失败就停；摘要只复述工具里的数字和观察条件。</td></tr>
+        <tr><td>command</td><td><b>开工按钮</b>。一句 <code>/research</code> 按当天规程开始这次盘后研究，默认用演示股票池。</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:8px">业务上是一条研究流水线。插件把每一段职责装进 Harness；模型负责解释，不负责算数和下单。</p>
+  </section>
+
+  <!-- 8d full workflow -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2 style="margin-bottom:.35em">一次盘后研究的完整工作流</h2>
+    <div class="flow">
+      <div class="step"><div class="t">用户</div><div class="s">“盘后研究”或 <code>/research</code></div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">command</div><div class="s">把固定提示词送进会话</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">Agent</div><div class="s">读 Context，按顺序调工具</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">回复</div><div class="s">只解释 JSON，不下单</div></div>
+    </div>
+    <div class="ctxbox" style="margin-top:10px">
+      <div class="hd"><b>Context</b><span>七个插件都挂在这一层 · Agent 从这里取能力</span></div>
+      <div class="prow c3">
+        <div class="pnode"><strong>guardrails</strong>系统提示，每轮都读</div>
+        <div class="pnode"><strong>skill</strong>作业手册，规定顺序</div>
+        <div class="pnode"><strong>command</strong>开工，注入用户消息</div>
+      </div>
+      <div class="prow c3">
+        <div class="pnode"><strong>market-data</strong>看市场，写出 run_id</div>
+        <div class="pnode"><strong>screening</strong>规则选股，前 10</div>
+        <div class="pnode"><strong>research-report</strong>研究卡 · 风险 · 报告</div>
+      </div>
+      <div class="arrowcol">↓ inject</div>
+      <div class="pnode hub"><strong>run-store · researchRunStore</strong>三个工具插件共用这一份案卷和同一个 run_id</div>
+    </div>
+    <div class="arrowcol">↓ trader.cli</div>
+    <div class="pybox"><b>Python</b> 计算并写入 SQLite，生成 Markdown / JSON。数字从这里来，不从模型来，再回到 Agent。</div>
+  </section>
+
+  <!-- 9 agent-profile-bundle-plugin interaction -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>agent – profile – bundle – plugin 的加载链</h2>
+    <div class="flow">
+      <div class="step"><div class="t">Profile</div><div class="s">bundles 里加入 <code>dsh-trading-bundle</code></div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">Bundle</div><div class="s">它的 patch 作为独立一层，<code>insert</code> 七条插件行</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">Runtime</div><div class="s">在 Context 上按依赖顺序 <code>apply</code> 每个插件</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">Agent</div><div class="s">拿到工具 / 护栏 / 技能 / 命令</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>依赖驱动的挂载顺序</h3><p><code>run-store</code> 先 <b>provide</b> <code>researchRunStore</code>；三个工具插件 <code>inject</code> 到它之后才 <code>apply</code>、注册工具。Cordis 的 <code>inject</code> 负责这个“等依赖就绪”。</p></div>
+      <div class="card"><h3>dump-config 可见</h3>
+        <pre><span class="c"># == @stock-trader/dsh-trading-bundle</span>
+- id: research-run-store
+  <span class="k">name</span>: '@stock-trader/dsh-plugin-run-store'
+  <span class="c"># …（共七条）</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 plugin-to-plugin: service collaboration -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>插件之间怎么交互：共享服务</h2>
+    <div class="svc">
+      <h3 style="margin:.1em 0">run-store ──provide──▶ <code>researchRunStore</code>（配置 + Python 桥）</h3>
+      <p style="color:#d7ddff;margin:.3em 0 0">工具插件 <code>inject: ["tools","researchRunStore"]</code>，在 <code>apply</code> 时取一次服务引用，调用 <code>store.snapshot / screen / research / risk / report</code>。</p>
+    </div>
+    <div class="flow" style="margin-top:14px">
+      <div class="step"><div class="t">market-data</div><div class="s">store.snapshot()</div></div>
+      <div class="step"><div class="t">screening</div><div class="s">store.screen()</div></div>
+      <div class="step"><div class="t">research-report</div><div class="s">store.research / risk / report()</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><h3>✅ 单一配置点</h3><p>改 Python 路径、或把 <code>dataMode</code> 从 <code>fixture</code> 切 <code>live</code>——只动 run-store 一处，三个工具插件不用改。</p></div>
+      <div class="card"><h3>✅ 一个 run_id 贯穿</h3><p>快照产生的 <code>run_id</code> 经同一个服务传到后续各步，底层共享同一份 SQLite。</p></div>
+    </div>
+  </section>
+
+  <!-- 11 one run_id flows -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>一个 run_id 跑通五步</h2>
+    <div class="flow">
+      <div class="step"><div class="t">get_market_snapshot</div><div class="s">产出 <code>run_id</code> + 市场快照</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">screen_stocks</div><div class="s">按 <code>trend_volume_v1</code> 选候选</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">get_stock_research_data</div><div class="s">展开前 5 名研究卡</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">check_stock_risk</div><div class="s">规则命中（warn / block）</div></div>
+      <div class="chev">→</div>
+      <div class="step"><div class="t">generate_daily_report</div><div class="s">写 Markdown + JSON</div></div>
+    </div>
+    <div class="kv" style="margin-top:18px">
+      <div class="k">数据日期<b>2026-10-21</b></div>
+      <div class="k">上证收盘<b>3713.03</b></div>
+      <div class="k">首个候选<b>300031</b></div>
+      <div class="k">收盘<b>26.36</b></div>
+      <div class="k">样本<b>fixture / 150 只</b></div>
+    </div>
+    <p class="small muted" style="margin-top:10px">Python 计算这些数字，模型只复述；断网/无模型时，CLI 仍能产出同一份报告骨架。</p>
+  </section>
+
+  <!-- 12 non-tool extension points -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>不是工具的插件，才体现“广度”</h2>
+    <div class="grid g3">
+      <div class="card"><h3>🛡️ guardrails</h3><p>往 <b>系统提示</b>注入一段护栏：不给买卖指令、只引用工具 JSON、<code>data_date</code> 不是“今天”。<b>塑造 Agent 行为，不加任何工具。</b></p></div>
+      <div class="card"><h3>📚 skill</h3><p>从插件内注册 <code>stock-research-pipeline</code> 技能，装插件即带流程说明——不依赖磁盘上的 <code>.dsh/skills</code>。</p></div>
+      <div class="card"><h3>⌨️ command</h3><p>给 UI 加 <code>/research</code>，用 <code>invocation.agent.followup</code> 注入一条用户消息，一键按固定提示词发起研究。</p></div>
+    </div>
+    <div class="note" style="margin-top:16px">四类扩展点各来一个，说明同一套插件机制能从<b>工具、服务、提示、技能、命令</b>多个维度扩展 Harness。</div>
+  </section>
+
+  <!-- 13 guardrails / compliance -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>合规与可追溯是设计的一部分</h2>
+    <div class="grid g2">
+      <div class="card"><h3>模型被约束在数据里</h3>
+        <ul>
+          <li>价格、指标、筛选只能来自工具 JSON</li>
+          <li><code>valuation / news / fund_flow</code> 留空＝未接入，不是“暂无利空”</li>
+          <li>候选为空是合法结果，不强行推荐</li>
+          <li>只写“观察条件”，不生成委托</li>
+        </ul>
+      </div>
+      <div class="card"><h3>两份留痕都写</h3>
+        <ul>
+          <li>给人看：<code>reports/&lt;date&gt;/&lt;run_id&gt;.md</code> 与 <code>.json</code></li>
+          <li>可追溯：<code>data/trader.sqlite</code>（runs / 候选 / 研究卡 / 风险 / 报告）</li>
+          <li>报告末尾固定免责声明：仅演示研究流程，不构成投资建议</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warnbox" style="margin-top:14px">范围边界：<b>不接券商、不下单、不转账、不实时盯盘</b>。这是研究流程平台，不是自动交易机器人。</div>
+  </section>
+
+  <!-- 14 verification -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>怎么验证它真的装上了</h2>
+    <pre><span class="c"># 1) 链接 workspace（把共享包链进每个插件）</span>
+cd harness/plugins &amp;&amp; <span class="k">pnpm</span> install
+
+<span class="c"># 2) Profile 只依赖这一个 bundle（插件在 bundle 的 dependencies 里）</span>
+<span class="k">dsh</span> plugin --profile trading-research install
+
+<span class="c"># 3) 组合层里出现独立的一层，含七条插件</span>
+<span class="k">dsh</span> --profile trading-research --dump-config | grep dsh-trading-bundle
+
+<span class="c"># 4) 跨包集成测试（真实 Cordis Context 挂载七个插件）</span>
+<span class="k">node</span> --experimental-strip-types --test harness/plugins/test/plugins.test.mjs</pre>
+    <div class="kv" style="margin-top:14px">
+      <div class="k">JS 集成测试<b>9 / 9 通过</b></div>
+      <div class="k">Python 测试<b>21 / 21 通过</b></div>
+      <div class="k">Profile 启动<b>无加载错误</b></div>
+    </div>
+  </section>
+
+  <!-- 15 what the integration test asserts -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 实践</div>
+    <h2>集成测试断言了什么</h2>
+    <div class="grid g2">
+      <div class="card"><h3>服务协作真的发生</h3><ul>
+        <li>工具插件 <b>注入</b>共享服务并注册全部工具</li>
+        <li>一个 <code>run_id</code> 跑通 快照→选股→个股→风险→报告</li>
+      </ul></div>
+      <div class="card"><h3>四类扩展点都生效</h3><ul>
+        <li>护栏段进入系统提示</li>
+        <li>技能进入技能表（<code>stock-research-pipeline</code>）</li>
+        <li><code>/research</code> 触发固定提示词</li>
+      </ul></div>
+    </div>
+    <div class="note" style="margin-top:16px">测试在<b>真实 Cordis Context</b> 上挂载七个插件、真实调用本地 Python——证明的是“插件之间的接线”，不是 mock。</div>
+  </section>
+
+  <!-- 16 design tradeoffs -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 收尾</div>
+    <h2>一路上的设计取舍</h2>
+    <div class="grid g2">
+      <div class="card"><h3>为什么拆成七个插件</h3><p>演示主题是“插件”。拆分让<b>服务协作</b>和<b>多扩展点</b>在目录与 dump-config 上一眼可见；共享代码收在一个 lib 包里。</p></div>
+      <div class="card"><h3>为什么用 bundle 加载</h3><p>bundle 是 DSH 正规的<b>组合层</b>机制；一行 <code>bundles</code> 就把七个插件作为一层装好，而不是堆用户 patch。</p></div>
+      <div class="card"><h3>为什么 Python 算、模型解释</h3><p>数字可复核、可离线、可重复；模型发挥也不会污染计算层。表与文本不一致时<b>以表为准</b>。</p></div>
+      <div class="card"><h3>为什么服务只在 run-store</h3><p>配置与 Python 桥集中一处；工具插件零配置，一个 <code>run_id</code> 天然贯穿同一份 SQLite。</p></div>
+    </div>
+  </section>
+
+  <!-- 17 roadmap -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 收尾</div>
+    <h2>要点与下一步</h2>
+    <div class="grid g2">
+      <div class="card"><h3>带走三句话</h3><ul>
+        <li><b>Profile 组装、Plugin 暴露、Python 计算、模型解释。</b></li>
+        <li>插件不止加工具：<b>服务 / 系统提示 / 技能 / 命令</b>都能插。</li>
+        <li>共享服务让插件<b>协作</b>，一个 run_id 贯穿全流程。</li>
+      </ul></div>
+      <div class="card"><h3>后续规划（不进主演示）</h3><ul>
+        <li>板块行情接口（接通前标“候选行业分布”）</li>
+        <li>规则回测：描述性统计，非业绩承诺</li>
+        <li>组合层面的风险聚合、模拟跟踪</li>
+        <li>始终不做：自动下单 / 实时盯盘</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- 18 closing -->
+  <section class="slide cover center">
+    <div class="kicker">谢谢观看</div>
+    <h1>一条可重复、可追溯的<br/>研究流水线</h1>
+    <p class="lead">DeepSeek Harness 把“交易研究员的工作流”定制成一个可启动的 Profile——<br/>七个插件、四类扩展点、一个共享服务，Python 计算、模型解释。</p>
+    <div class="chips">
+      <span class="pill">Agent · Runtime · Profile · Context · Bundle · Plugin</span>
+    </div>
+    <div class="foot"><span>Q &amp; A</span><span class="r">研究仅用于演示，不构成投资建议</span></div>
+  </section>
+
+</div>
+
+<div class="hud">
+  <button class="btn" id="prev">‹ 上一页</button>
+  <div class="dots" id="dots"></div>
+  <button class="btn" id="next">下一页 ›</button>
+</div>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0;
+  var dots = document.getElementById('dots');
+  slides.forEach(function(_, k){
+    var b = document.createElement('button');
+    b.className = 'dot' + (k===0?' on':'');
+    b.setAttribute('aria-label','第'+(k+1)+'页');
+    b.addEventListener('click', function(){ show(k); });
+    dots.appendChild(b);
+  });
+  var dotEls = Array.prototype.slice.call(dots.children);
+  var counter = document.getElementById('counter');
+  var prog = document.getElementById('prog');
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+    dotEls.forEach(function(d,k){ d.classList.toggle('on', k===i); });
+    counter.textContent = (i+1) + ' / ' + slides.length;
+    prog.style.width = ((i)/(slides.length-1)*100) + '%';
+    var act = slides[i]; if(act){ act.scrollTop = 0; }
+  }
+  document.getElementById('prev').addEventListener('click', function(){ show(i-1); });
+  document.getElementById('next').addEventListener('click', function(){ show(i+1); });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(i+1); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(i-1); e.preventDefault(); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(slides.length-1); }
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+  });
+  // swipe on touch
+  var sx=null;
+  document.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(sx===null) return; var dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx)>50){ show(i + (dx<0?1:-1)); } sx=null;
+  }, {passive:true});
+  show(0);
+</script>
+</body>
+</html>

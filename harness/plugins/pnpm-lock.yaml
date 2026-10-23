@@ -9,25 +9,25 @@ importers:
   command:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   guardrails:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   market-data:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   research-report:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   run-store:
@@ -36,13 +36,13 @@ importers:
         specifier: ~4.0.5
         version: 4.0.5
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   screening:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
   shared: {}
@@ -50,7 +50,7 @@ importers:
   skill:
     dependencies:
       '@stock-trader/dsh-plugin-shared':
-        specifier: link:../shared
+        specifier: file:../shared
         version: link:../shared
 
 packages:
