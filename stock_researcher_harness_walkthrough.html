@@ -121,7 +121,7 @@
 <body>
 <div class="progress" id="prog"></div>
 <div class="brandbar">股票研究员工作流 × DeepSeek Harness</div>
-<div class="counter" id="counter">1 / 30</div>
+<div class="counter" id="counter">1 / 32</div>
 <div class="stage" id="stage">
 
   <!-- 1 Cover -->
@@ -364,6 +364,39 @@
       <tr><td>出报告</td><td>generate_daily_report<br/><span class="muted small">research-report</span></td><td>report</td><td>reporting.render</td><td>reports/*.md + *.json</td></tr>
     </table>
     <div class="warnbox" style="margin-top:10px"><b>一个反直觉点（下一张详讲）</b>：<code>get_market_snapshot</code> 其实在 Python 里就把<b>整条流水线</b>算完并落库了；后四步是按 <code>run_id</code> 回读/重渲染同一份 run。</div>
+  </section>
+
+  <!-- 14b Python 对外接口 -->
+  <section class="slide">
+    <div class="kicker">第三部分 · Python 对外接口</div>
+    <h2>Python 只暴露一个入口：<code>python -m trader.cli &lt;子命令&gt; --json</code></h2>
+    <p class="lead" style="margin:.1em 0 .4em">插件唯一调用的契约接口，stdout 永远是一个 JSON 信封。七个子命令，五个是会话工具，两个是离线/备用。</p>
+    <table>
+      <tr><th>子命令</th><th>对应工具</th><th>输入参数</th><th>功能 / 输出</th></tr>
+      <tr><td>market-snapshot</td><td>get_market_snapshot</td><td><code>--universe</code> <code>--data-mode</code> <code>--as-of?</code></td><td><b>跑完整条流水线并落库</b>，返回快照 + <code>run_id</code></td></tr>
+      <tr><td>screen</td><td>screen_stocks</td><td><code>--run-id</code></td><td>回读该 run 的选股候选</td></tr>
+      <tr><td>stock-research</td><td>get_stock_research_data</td><td><code>--run-id</code> <code>--symbols?</code></td><td>展开研究卡（默认前 5）</td></tr>
+      <tr><td>check-risk</td><td>check_stock_risk</td><td><code>--run-id</code></td><td>规则命中（block / warn）</td></tr>
+      <tr><td>report</td><td>generate_daily_report</td><td><code>--run-id</code></td><td>渲染 Markdown + JSON 研报</td></tr>
+      <tr><td>daily</td><td><span class="muted">run_daily_research（备用）</span></td><td><code>--universe</code> <code>--data-mode</code></td><td>一条命令跑完五步，仅人工 CLI</td></tr>
+      <tr><td>freeze-fixture</td><td><span class="muted">freeze_fixture</span></td><td><code>--limit</code></td><td>从 AKShare 抓取并冻结一份样本</td></tr>
+    </table>
+    <div class="note" style="margin-top:10px"><code>daily</code> / <code>freeze-fixture</code> <b>不是会话工具</b>：前者是本地一把梭的备用路径，后者离线造数据用。模型只会碰上面五个。</div>
+  </section>
+
+  <!-- 14c Python 对内分层 -->
+  <section class="slide">
+    <div class="kicker">第三部分 · Python 对内分层</div>
+    <h2>支撑这些子命令的分层函数接口</h2>
+    <div class="grid g3">
+      <div class="card"><h3>🧭 编排层</h3><p><code>pipeline.run_daily</code>：读→清洗→指标→选股→落库→出研究/风险/报告。<br/><code>workflow.research_payload / risk_payload / report_payload</code>：按 <code>run_id</code> 的分步接口。</p></div>
+      <div class="card"><h3>🗄 数据层 <span class="muted small">data/</span></h3><p><code>fixture_source</code>：load_manifest / universe / bars / market / industry。<br/><code>akshare_source</code>：fetch_daily_bars / fetch_spot / select_liquid_universe。<br/><code>quality.prepare_symbol</code> · <code>transport</code> · <code>freeze</code>。</p></div>
+      <div class="card"><h3>🧮 计算层</h3><p><code>indicators.trend.add_indicators</code>（MA/收益/量比）。<br/><code>screening.screener.screen</code> + <code>rules.RULES</code>。<br/><code>research.cards.build_cards</code> · <code>risk.checks.evaluate</code>。</p></div>
+      <div class="card"><h3>📝 输出层</h3><p><code>reporting.render</code>：render_markdown / render_document / write_report / industry_distribution。</p></div>
+      <div class="card"><h3>💾 存储层 <span class="muted small">sqlite_store</span></h3><p>connect · save_run / load_run · save_research / load_research · save_risk / load_risk · save_report · load_bars。</p></div>
+      <div class="card"><h3>🧱 基础设施</h3><p><code>contracts</code>：envelope / error_body / TraderError + 错误码（统一信封）。<br/><code>paths</code>：project_root / data_dir / reports_dir / fixture_root。</p></div>
+    </div>
+    <div class="okbox" style="margin-top:10px">计算全部<b>确定性</b>、以统一信封返回。对 Harness 而言"功能接口"= <b>trader.cli 的 7 个子命令</b>；其余都是内部支撑函数。</div>
   </section>
 
   <!-- 15 Trigger 0: /research -->
