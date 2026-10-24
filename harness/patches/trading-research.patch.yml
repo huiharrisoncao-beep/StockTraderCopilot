@@ -6,8 +6,16 @@
 # dsh.profile.bundles (see harness/bundle/ and docs/plugin-architecture.md).
 # The bundle patch that inserts the seven plugins is harness/bundle/cordis.patch.yml.
 #
-# This user layer only keeps DSH's own UI row, applied after every bundle layer.
+# This user layer keeps DSH's own UI row and the profile-level appearance
+# override, applied after every bundle layer.
 - id: ui-settings-general
   name: "@deepseek-ai/dsh-client-ui-settings-general"
   config:
     welcomeNoticeVersion: 2026-09-28.1
+# Default this profile to the dark palette. ui-theme embeds its registered
+# config (or schema defaults) into the first index response, so the pre-plugin
+# palette paints dark for any browser that has not saved its own preference.
+- id: ui-theme
+  name: "@deepseek-ai/dsh-client-ui-theme"
+  config:
+    preference: dark

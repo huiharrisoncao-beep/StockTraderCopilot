@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>股票交易员 · A 股盘后研究工作台</title>
+<style>
+  :root{
+    --bg:#0b0e1a; --bg2:#0f1426; --panel:#141a2e; --panel2:#19203a;
+    --ink:#e8ecfb; --muted:#9aa6cf; --dim:#6b77a3;
+    --line:#242c47; --line2:#2d375a;
+    --accent:#6c8cff; --accent2:#4ad6c0; --good:#3ad29f; --warn:#f0b454; --bad:#ff6b7d;
+    --chip:#1b223c;
+    --grad:linear-gradient(135deg,#6c8cff 0%,#4ad6c0 100%);
+    --mono:"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(900px 500px at 12% -8%, #16203a 0%, transparent 60%),
+      radial-gradient(1000px 600px at 100% 0%, #10233a 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);min-height:100vh;line-height:1.55;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:30px 26px 60px}
+  /* top brand bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:52px;height:52px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 10px 30px rgba(74,214,192,.25)}
+  .brand h1{font-size:30px;margin:0;letter-spacing:.02em}
+  .brand .sub{color:var(--muted);font-size:13.5px;margin-top:3px}
+  .statuschip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:12.5px;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(58,210,159,.15)}
+  /* hero launch */
+  .hero{background:linear-gradient(135deg,#141a2e 0%,#101733 100%);border:1px solid var(--line2);border-radius:20px;padding:24px 26px;margin-bottom:20px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(108,140,255,.18),transparent 70%)}
+  .hero h2{margin:0 0 4px;font-size:19px}
+  .hero p{color:var(--muted);margin:.2em 0 16px;font-size:14px}
+  .cmd{display:flex;align-items:center;gap:10px;background:#0a0e1c;border:1px solid var(--line2);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:13px;color:#cfe0ff;overflow:auto}
+  .cmd .pfx{color:var(--accent2)}
+  .copy{margin-left:auto;flex:none;background:var(--chip);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:7px 12px;font-size:12px;cursor:pointer;transition:.15s}
+  .copy:hover{background:#232c4e}
+  .copy.done{color:var(--good);border-color:#2a6b53}
+  .heroflags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .flag{font-size:12px;color:var(--muted);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .flag b{color:var(--accent2)}
+  /* grid */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1.25fr .9fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .card h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .card h3 .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  /* pipeline */
+  .pipe{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+  .stepi{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .stepi .n{width:34px;height:34px;border-radius:10px;background:var(--grad);color:#07101f;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .stepi .tool{font-family:var(--mono);font-size:12.5px;color:#aecbff}
+  .stepi .d{color:var(--muted);font-size:12.5px;margin-top:3px}
+  /* rails list */
+  ul.rails{list-style:none;margin:0;padding:0}
+  ul.rails li{position:relative;padding:7px 0 7px 24px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+  ul.rails li:last-child{border-bottom:none}
+  ul.rails li::before{content:"✓";position:absolute;left:0;top:7px;color:var(--good);font-weight:800}
+  ul.rails li.no::before{content:"✕";color:var(--bad)}
+  ul.rails li b{color:var(--ink)}
+  /* meta rows */
+  .meta{display:flex;flex-direction:column;gap:10px}
+  .mrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:9px}
+  .mrow:last-child{border-bottom:none;padding-bottom:0}
+  .mrow .l{color:var(--dim)}
+  .mrow .v{color:var(--ink);font-family:var(--mono);font-size:12.5px;text-align:right}
+  code{font-family:var(--mono);background:var(--chip);color:#bcd0ff;padding:.08em .4em;border-radius:6px;font-size:.88em}
+  .note{border-left:3px solid var(--accent);background:rgba(108,140,255,.08);border-radius:9px;padding:10px 14px;color:#c3cdf2;font-size:12.8px;margin-top:14px}
+  .footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;color:var(--dim);font-size:12px}
+  .footer .warn{color:var(--warn)}
+  .sectitle{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:26px 2px 12px;font-weight:700}
+  @media (max-width:820px){ .g2,.g3{grid-template-columns:1fr} .topbar{flex-direction:column;align-items:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Brand bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">📈</div>
+      <div>
+        <h1>股票交易员</h1>
+        <div class="sub">A 股盘后研究工作台 · 研究仅用于演示，不构成投资建议</div>
+      </div>
+    </div>
+    <div class="statuschip"><span class="dot"></span> trading-research · 深色主题 · fixture 数据</div>
+  </div>
+
+  <!-- Hero: launch -->
+  <div class="hero">
+    <h2>▶ 启动研究员运行时</h2>
+    <p>这个 Profile 已默认深色。启动后在 UI 里把工作区指向本仓库，再用 <code>/research</code> 开始盘后研究。</p>
+    <div class="cmd">
+      <span><span class="pfx">$</span> dsh --profile trading-research --no-open --port 8787</span>
+      <button class="copy" data-cmd="dsh --profile trading-research --no-open --port 8787">复制</button>
+    </div>
+    <div class="heroflags">
+      <span class="flag">入口：<b>/research [demo]</b></span>
+      <span class="flag">计算：<b>Python · trader.cli</b></span>
+      <span class="flag">模型：<b>只解释，不下单</b></span>
+      <span class="flag">贯穿：<b>一个 run_id</b></span>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="grid g2">
+    <!-- Pipeline -->
+    <div class="card">
+      <h3><span class="k">盘后研究流水线</span></h3>
+      <div class="pipe">
+        <div class="stepi"><div class="n">1</div><div><span class="tool">get_market_snapshot</span><div class="d">看市场：指数、涨跌家数、<code>data_date</code>，并生成本次 <code>run_id</code>。失败即停。</div></div></div>
+        <div class="stepi"><div class="n">2</div><div><span class="tool">screen_stocks</span><div class="d">按规则 <code>trend_volume_v1</code> 选股：多头排列 + 涨幅适中 + 放量不极端。空候选是合法结果。</div></div></div>
+        <div class="stepi"><div class="n">3</div><div><span class="tool">get_stock_research_data</span><div class="d">把前 5 名展开成研究卡，只摆事实；估值/新闻/资金流为未接入，留空。</div></div></div>
+        <div class="stepi"><div class="n">4</div><div><span class="tool">check_stock_risk</span><div class="d">规则命中：缺数据 <b>block</b> 移出重点；走弱/异常/扎堆/过期只 <b>warn</b>。</div></div></div>
+        <div class="stepi"><div class="n">5</div><div><span class="tool">generate_daily_report</span><div class="d">落 Markdown + JSON 报告，表格数字由 Python 生成，不可改写。</div></div></div>
+      </div>
+    </div>
+
+    <!-- Rails + run info -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h3><span class="k">职业边界 · 护栏</span></h3>
+        <ul class="rails">
+          <li>数字只来自工具返回的 JSON</li>
+          <li><b>data_date</b> 是工具返回值，不是“今天”</li>
+          <li>空候选是合法结果，<b>不改规则或日期</b>重跑</li>
+          <li class="no">不输出买卖 / 目标价 / 仓位指令</li>
+          <li class="no">空字段不说成“暂无利空”</li>
+          <li class="no">不下单 / 转账 / 登录券商</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="k">本次 run 落点</span></h3>
+        <div class="meta">
+          <div class="mrow"><span class="l">运行档案</span><span class="v">data/trader.sqlite</span></div>
+          <div class="mrow"><span class="l">人读副本</span><span class="v">data/processed/&lt;date&gt;/</span></div>
+          <div class="mrow"><span class="l">研报 Markdown</span><span class="v">reports/&lt;date&gt;/&lt;run_id&gt;.md</span></div>
+          <div class="mrow"><span class="l">研报 JSON</span><span class="v">reports/&lt;date&gt;/&lt;run_id&gt;.json</span></div>
+          <div class="mrow"><span class="l">run_id 格式</span><span class="v">research-YYYYMMDD-HHMMSS</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sectitle">离线自检 · 不依赖模型</div>
+  <div class="grid g3">
+    <div class="card">
+      <h3><span class="k">健康检查</span></h3>
+      <div class="cmd" style="font-size:12px">
+        <span>ping_research</span>
+        <button class="copy" data-cmd="ping_research">复制</button>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:10px 0 0">只做健康检查，不读行情。返回 <code>{"ok":true,…}</code>。</p>
+    </div>
+    <div class="card">
+      <h3><span class="k">CLI 直跑快照</span></h3>
+      <div class="cmd" style="font-size:11.5px">
+        <span>python -m trader.cli market-snapshot --json</span>
+        <button class="copy" data-cmd="python -m trader.cli market-snapshot --json">复制</button>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:10px 0 0">断开模型也能生成 JSON——计算在 Python，不在模型。</p>
+    </div>
+    <div class="card">
+      <h3><span class="k">集成测试</span></h3>
+      <div class="cmd" style="font-size:11px">
+        <span>node --test harness/plugins/test/*.mjs</span>
+        <button class="copy" data-cmd="node --experimental-strip-types --test harness/plugins/test/plugins.test.mjs harness/plugins/test/runner.test.mjs">复制</button>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:10px 0 0">真实 Context 挂载七个插件，一个 run_id 跑通五步。</p>
+    </div>
+  </div>
+
+  <div class="note">
+    深色主题已写进 Profile：<code>harness/patches/trading-research.patch.yml</code> 里给 <code>ui-theme</code> 设了 <code>preference: dark</code>，首屏即深色。此页为独立启动页，不嵌入 DSH 侧边栏。
+  </div>
+
+  <div class="footer">
+    <span>股票交易员 · trading-research</span>
+    <span class="warn">研究结果仅用于演示研究流程，不构成投资建议，不保证收益，不触发任何交易。</span>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = btn.getAttribute('data-cmd') || '';
+      var done = function(){ var old = btn.textContent; btn.textContent='已复制'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1400); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, function(){ fallback(text); done(); });
+      } else { fallback(text); done(); }
+    });
+  });
+  function fallback(text){
+    var ta = document.createElement('textarea'); ta.value = text;
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta);
+  }
+</script>
+</body>
+</html>
