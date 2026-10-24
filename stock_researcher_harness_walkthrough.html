@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>股票研究员工作流 × DeepSeek Harness · 全流程拆解</title>
+<style>
+  :root{
+    --bg:#0f1226; --card:#ffffff; --ink:#1b2340; --muted:#5b6690;
+    --accent:#6c5ce7; --accent2:#2f80ed; --good:#1f9d6b; --warn:#d98324; --bad:#d64550;
+    --line:#e5e8f4; --chip:#f1f3fb; --code:#0b1020;
+    --grad:linear-gradient(135deg,#6c5ce7 0%,#2f80ed 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 800px at 15% -10%,#20264d 0%,#0f1226 55%) fixed;
+    color:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .stage{width:min(1180px,97vw);height:min(680px,94vh);position:relative}
+  .slide{
+    position:absolute;inset:0;background:var(--card);border-radius:20px;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);padding:40px 52px;overflow:auto;
+    opacity:0;transform:translateY(14px) scale(.985);pointer-events:none;
+    transition:opacity .35s ease,transform .35s ease;
+  }
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:38px;line-height:1.15;margin:.35em 0 .25em}
+  h2{font-size:27px;line-height:1.2;margin:.1em 0 .5em}
+  h3{font-size:17px;margin:.2em 0}
+  p{color:var(--muted);line-height:1.55;margin:.4em 0}
+  ul{margin:.3em 0 .3em;padding-left:1.1em}
+  li{margin:.36em 0;line-height:1.45}
+  b,strong{color:var(--ink)}
+  .lead{font-size:17px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+  code,.mono{font-family:"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  code{background:var(--chip);color:#3b2f91;padding:.08em .4em;border-radius:6px;font-size:.88em}
+  .grid{display:grid;gap:13px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g4{grid-template-columns:1fr 1fr 1fr 1fr}
+  .card{background:#fbfcff;border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .card h3{display:flex;align-items:center;gap:8px}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;background:var(--grad);padding:3px 9px;border-radius:999px}
+  .pill{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:var(--chip);border:1px solid var(--line);padding:3px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+  tr:last-child td{border-bottom:none}
+  td:first-child{font-weight:700;color:var(--ink);white-space:nowrap}
+  .center{display:flex;flex-direction:column;justify-content:center;height:100%}
+  .cover{background:var(--grad);color:#fff}
+  .cover .kicker,.cover code{color:#e9e6ff}
+  .cover h1{font-size:44px}
+  .cover p{color:#eef}
+  .cover .chips{margin-top:18px}
+  .cover .pill{color:#fff;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28)}
+  .ladder{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .rung{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;background:#fbfcff;border:1px solid var(--line);border-radius:12px;padding:9px 14px}
+  .rung .n{font-weight:800;color:var(--ink);font-size:15px}
+  .rung .d{color:var(--muted);font-size:13px;line-height:1.4}
+  .rung.lv0{background:linear-gradient(135deg,#efeaff,#eaf1ff)}
+  .arrowcol{display:flex;justify-content:center;color:var(--accent);font-weight:800;margin:-3px 0;font-size:13px}
+  .flow{display:flex;align-items:stretch;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .step{flex:1 1 0;min-width:110px;background:#fbfcff;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .step .t{font-weight:800;font-size:13.5px}
+  .step .s{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .chev{display:flex;align-items:center;color:var(--accent);font-weight:800;font-size:19px}
+  .svc{background:linear-gradient(135deg,#1b2340,#2a356b);color:#fff;border-radius:14px;padding:15px 18px}
+  .svc code{background:rgba(255,255,255,.14);color:#fff}
+  .note{border-left:4px solid var(--accent);background:#f6f4ff;border-radius:10px;padding:9px 14px;color:#443a7a;font-size:13.5px}
+  .warnbox{border-left:4px solid var(--warn);background:#fff6ec;border-radius:10px;padding:9px 14px;color:#7a5417;font-size:13.5px}
+  .okbox{border-left:4px solid var(--good);background:#eefaf4;border-radius:10px;padding:9px 14px;color:#196149;font-size:13.5px}
+  pre{background:var(--code);color:#e7ecff;border-radius:12px;padding:13px 15px;overflow:auto;font-size:12.5px;line-height:1.5}
+  pre .c{color:#7f8bbd}
+  pre .k{color:#8ad0ff}
+  pre .g{color:#86e1b0}
+  pre .y{color:#f2c879}
+  /* I/O step layout */
+  .io{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  .iobox{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfcff}
+  .iobox .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;margin-bottom:6px}
+  .iobox.in .lab{color:var(--accent2)}
+  .iobox.out .lab{color:var(--good)}
+  .iobox.proc .lab{color:var(--accent)}
+  .iobox.link .lab{color:var(--warn)}
+  .iobox ul{margin:.1em 0;padding-left:1.05em}
+  .iobox li{font-size:12.7px;margin:.3em 0;color:var(--muted)}
+  .iobox li b{color:var(--ink)}
+  .stepno{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:var(--grad);color:#fff;font-weight:800;font-size:16px;margin-right:10px;vertical-align:middle}
+  .chain{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  .chain .c{font-size:12px;background:#f1f3fb;border:1px solid var(--line);border-radius:8px;padding:5px 9px;color:#3d4670}
+  .chain .c b{color:var(--accent)}
+  .chain .arr{color:var(--accent);font-weight:800}
+  .board{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:stretch}
+  .lane{display:flex;flex-direction:column;gap:7px}
+  .pnode{background:#fff;border:1px solid #ddd7ff;border-radius:10px;padding:7px 9px;font-size:12px;line-height:1.35;color:#5b6690}
+  .pnode strong{display:block;color:#1b2340;font-size:12.5px}
+  .pnode.hub{background:#1b2340;color:#d7ddff;border-color:#1b2340}
+  .pnode.hub strong{color:#fff}
+  .hud{position:fixed;left:0;right:0;bottom:12px;display:flex;align-items:center;justify-content:center;gap:14px;z-index:20}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;max-width:56vw;justify-content:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);border:none;cursor:pointer;padding:0}
+  .dot.on{background:#fff;transform:scale(1.25)}
+  .btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:7px 12px;cursor:pointer;font-size:13px}
+  .btn:hover{background:rgba(255,255,255,.22)}
+  .counter{position:fixed;top:14px;right:20px;color:rgba(255,255,255,.7);font-size:13px;z-index:20;font-variant-numeric:tabular-nums}
+  .brandbar{position:fixed;top:14px;left:20px;color:rgba(255,255,255,.7);font-size:13px;z-index:20}
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);z-index:30;transition:width .3s ease}
+  .foot{position:absolute;bottom:14px;left:52px;right:52px;display:flex;justify-content:space-between;color:#b8bfdd;font-size:12px}
+  .foot .r{color:var(--accent)}
+  .secdiv{background:var(--grad);color:#fff}
+  .secdiv .big{font-size:84px;font-weight:800;opacity:.22;line-height:1}
+  @media (max-width:760px){ .slide{padding:24px 20px} h1{font-size:28px} .cover h1{font-size:32px} .g2,.g3,.g4,.board,.io{grid-template-columns:1fr} .rung{grid-template-columns:104px 1fr} }
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="brandbar">股票研究员工作流 × DeepSeek Harness</div>
+<div class="counter" id="counter">1 / 30</div>
+<div class="stage" id="stage">
+
+  <!-- 1 Cover -->
+  <section class="slide cover center active">
+    <div class="kicker">全流程技术分享 · 约 40 分钟</div>
+    <h1>股票研究员工作流 ×<br/>DeepSeek Harness 全流程拆解</h1>
+    <p class="lead">从 <code>/research</code> 一句话，到一份可追溯的盘后研报——<br/>每一步的输入、输出、如何上下触发衔接，讲到底。</p>
+    <div class="chips">
+      <span class="pill">① Harness 概念回顾</span>
+      <span class="pill">② 研究员真实工作流</span>
+      <span class="pill">③ 工作流 ↔ Harness 逐步映射</span>
+    </div>
+    <div class="foot"><span>演示文稿</span><span class="r">← / → / 空格 翻页 · F 全屏</span></div>
+  </section>
+
+  <!-- 2 Agenda -->
+  <section class="slide">
+    <div class="kicker">今天怎么讲</div>
+    <h2>四段 · 约 40 分钟</h2>
+    <div class="grid g4">
+      <div class="card"><span class="tag">A · 8 min</span><h3>Harness 概念回顾</h3><p>Profile / Bundle / Plugin / Context / Runtime / Agent，以及它们怎么拼起来。</p></div>
+      <div class="card"><span class="tag">B · 7 min</span><h3>研究员的一天</h3><p>真实盘后研究到底在做什么：看市场、选股、个股研究、风险、留报告。</p></div>
+      <div class="card"><span class="tag">C · 20 min</span><h3>逐步映射（重点）</h3><p>每一步的输入 / 输出 / 上下触发衔接，一步一张图。</p></div>
+      <div class="card"><span class="tag">D · 5 min</span><h3>设计取舍与演示</h3><p>为什么这么分层，怎么验证，怎么现场跑。</p></div>
+    </div>
+    <div class="note" style="margin-top:16px">一句话主线：<b>Profile 组装能力，Plugin 暴露能力，一个共享服务串起一个 <code>run_id</code>，Python 计算，模型只解释、不下单。</b></div>
+  </section>
+
+  <!-- 3 Section A divider -->
+  <section class="slide secdiv center">
+    <div class="big">A</div>
+    <div class="kicker" style="color:#e9e6ff">第一部分</div>
+    <h1 style="margin-top:0">回顾 DeepSeek Harness 核心概念</h1>
+    <p style="color:#eef">Profile · Bundle · Plugin · Context · Runtime · Agent</p>
+  </section>
+
+  <!-- 4 Concepts overview -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 概念</div>
+    <h2>六个概念，一句话各讲清</h2>
+    <div class="grid g2">
+      <div class="card"><h3>🧠 Agent（智能体）</h3><p>一轮轮循环：决定调哪个工具、读系统提示、按需加载技能。能力不写死，用 Runtime 给的那一套。</p></div>
+      <div class="card"><h3>⚙️ Runtime（运行时）</h3><p>把组合好的 Profile 实例化出的运行环境：一棵 Cordis Context 树 + 生命周期。</p></div>
+      <div class="card"><h3>📦 Profile（配置档）</h3><p>一叠<b>有序的 bundle patch 层</b> + 用户覆盖，放在 <code>~/.dsh/profiles</code>。<code>dsh --profile &lt;name&gt;</code> 启动。</p></div>
+      <div class="card"><h3>🔌 Context（上下文）</h3><p>Cordis 的服务容器 / 依赖注入层。插件在它上面 <b>provide</b> 与 <b>inject</b> 能力。</p></div>
+      <div class="card"><h3>🧱 Bundle（捆绑包）</h3><p>一个 npm 包，带 <code>dsh.bundle.patch</code> 指向 patch；被 Profile 列出后作为<b>一个组合层</b>生效。</p></div>
+      <div class="card"><h3>🧩 Plugin（插件）</h3><p>一个 Cordis 插件（<code>name</code>/<code>apply</code>/<code>inject</code>）。注册工具、提供服务、注入系统提示、技能或命令。</p></div>
+    </div>
+  </section>
+
+  <!-- 5 Relationship ladder -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 概念</div>
+    <h2>它们是怎么拼起来的（自底向上）</h2>
+    <div class="ladder">
+      <div class="rung lv0"><div class="n">🧠 Agent</div><div class="d">运行在 Runtime 上，使用 Context 里插件注册的 工具 / 系统提示 / 技能 / 命令。</div></div>
+      <div class="arrowcol">▲ 运行于</div>
+      <div class="rung lv0"><div class="n">⚙️ Runtime</div><div class="d">把组合好的 Profile 实例化；构建并持有下面这棵 Context 树。</div></div>
+      <div class="arrowcol">▲ 构建</div>
+      <div class="rung"><div class="n">🔌 Context</div><div class="d">服务容器。Plugin 在其上 provide / inject：<code>tools</code> <code>systemPrompt</code> <code>skills</code> <code>commands</code> + 自定义服务。</div></div>
+      <div class="arrowcol">▲ mount（apply）</div>
+      <div class="rung"><div class="n">🧩 Plugins</div><div class="d">一条条 <code>- id / name / config</code>；每个插件在 Context 上注册能力。</div></div>
+      <div class="arrowcol">▲ patch 插入</div>
+      <div class="rung"><div class="n">🧱 Bundles</div><div class="d">每个 bundle 的 <code>cordis.patch.yml</code> 作为一层，插入若干 plugin 行。</div></div>
+      <div class="arrowcol">▲ 列出</div>
+      <div class="rung lv0"><div class="n">📦 Profile</div><div class="d"><code>dsh.profile.bundles</code> 有序列出 bundles；再叠用户 patch。<code>dsh --profile</code> 启动。</div></div>
+    </div>
+  </section>
+
+  <!-- 6 Extension points -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 概念</div>
+    <h2>Context 上的四类扩展点 + 自定义服务</h2>
+    <div class="grid g2">
+      <div class="card"><h3>🛠 <code>tools</code></h3><p>注册模型可调用的工具（含 JSON Schema 校验的输入输出）。本项目：<code>get_market_snapshot</code> 等 6 个。</p></div>
+      <div class="card"><h3>📜 <code>systemPrompt</code></h3><p>往系统提示插入持久段落。本项目：<code>guardrails</code> 合规护栏。不注册任何工具也能改变行为。</p></div>
+      <div class="card"><h3>📘 <code>skills</code></h3><p>注册可被模型/用户加载的技能规程。本项目：<code>stock-research-pipeline</code>。</p></div>
+      <div class="card"><h3>⌨️ <code>commands</code></h3><p>注册斜杠命令。本项目：<code>/research</code> 把固定提示词作为新用户消息送入会话。</p></div>
+    </div>
+    <div class="svc" style="margin-top:12px"><h3 style="color:#fff;margin:0 0 4px">🧰 自定义服务（Service）—— 本项目的协作核心</h3>
+    <p style="color:#d7ddff;margin:0"><code>research-run-store</code> 提供 <code>researchRunStore</code> 服务：独占配置与 Python 桥。三个工具插件 <code>inject</code> 它，自己不持配置、不起进程。一个 <code>run_id</code> 由它串起五步。</p></div>
+  </section>
+
+  <!-- 7 This project's assembly -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 概念落到本项目</div>
+    <h2>一个 Profile · 一个 Bundle · 七个插件 · 一个共享包</h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">Profile：trading-research</div>
+        <ul>
+          <li>从 <code>web</code> 模板复制，不动日常 Profile</li>
+          <li><code>dsh.profile.bundles</code> 列三层：<br/><code>dsh-base</code> → <code>dsh-web-app</code> → <code>dsh-trading-bundle</code></li>
+          <li>只 <code>link:</code> 一个 bundle，插件不写进 Profile 的 package.json</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">Bundle：@stock-trader/dsh-trading-bundle</div>
+        <ul>
+          <li><code>dsh.bundle.patch → cordis.patch.yml</code></li>
+          <li>一次 <code>insert</code> 七个插件行，作为独立组合层</li>
+          <li><code>dump-config</code> 里能看到 “== dsh-trading-bundle” 这一段七条</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid g4" style="margin-top:12px">
+      <div class="card small"><b>run-store</b><br/><span class="muted">Service · Python 桥</span></div>
+      <div class="card small"><b>market-data</b><br/><span class="muted">tools · 快照 / ping</span></div>
+      <div class="card small"><b>screening</b><br/><span class="muted">tools · 选股</span></div>
+      <div class="card small"><b>research-report</b><br/><span class="muted">tools · 研究/风险/报告</span></div>
+      <div class="card small"><b>guardrails</b><br/><span class="muted">systemPrompt</span></div>
+      <div class="card small"><b>skill</b><br/><span class="muted">skills</span></div>
+      <div class="card small"><b>command</b><br/><span class="muted">commands · /research</span></div>
+      <div class="card small"><b>shared</b><br/><span class="muted">共享 lib（非插件）</span></div>
+    </div>
+  </section>
+
+  <!-- 8 Bundle loading -->
+  <section class="slide">
+    <div class="kicker">第一部分 · 概念</div>
+    <h2>Bundle 怎么“装进”运行时</h2>
+    <div class="io">
+      <div class="iobox proc"><div class="lab">加载链</div>
+        <ul>
+          <li><b>Profile 启动</b>：<code>dsh --profile trading-research</code></li>
+          <li>Runtime 读 <code>dsh.profile.bundles</code>，<b>按顺序</b>叠加每个 bundle 的 patch 层</li>
+          <li>trading-bundle 的 patch 把七个 plugin 行 <b>insert</b> 进配置</li>
+          <li>每个 plugin 的 <code>apply(ctx)</code> 在 Context 上 mount 自己的能力</li>
+        </ul>
+      </div>
+      <div class="iobox link"><div class="lab">两个容易混的“装入”</div>
+        <ul>
+          <li><b>插件</b>：Profile 启动时由 <b>bundle/patch</b> 装入（配置层）</li>
+          <li><b>文件系统 Skill</b> <code>.dsh/skills/…</code>：由 <code>dsh-base</code> 自带的 <code>skill-filesystem</code> 在<b>工作区指向本仓库</b>时扫描装入</li>
+          <li><b>AGENTS.md</b>：工作目录在本仓库时作为工作区指令进会话</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warnbox" style="margin-top:12px">所以演示前必须在 UI 里把<b>工作区加到本仓库</b>，否则磁盘 Skill 和 AGENTS.md 不进会话——这跟 bundle 装插件是两条独立通道。</div>
+  </section>
+
+  <!-- 9 Section B divider -->
+  <section class="slide secdiv center">
+    <div class="big">B</div>
+    <div class="kicker" style="color:#e9e6ff">第二部分</div>
+    <h1 style="margin-top:0">股票研究员的一天</h1>
+    <p style="color:#eef">真实的盘后研究，是一条可重复、可追溯的流水线，不是“让模型猜一只票”。</p>
+  </section>
+
+  <!-- 10 Researcher job -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 角色</div>
+    <h2>研究员在做什么，不做什么</h2>
+    <div class="io">
+      <div class="iobox out"><div class="lab">研究员做的</div>
+        <ul>
+          <li>盘后复盘：先看<b>整体市场环境</b>（指数、涨跌家数）</li>
+          <li>按<b>写明的规则</b>从股票池里选出候选，而不是凭感觉</li>
+          <li>对候选做<b>个股研究</b>：价格、均线、动量、量能、距阶段高点</li>
+          <li>做<b>风险检查</b>：数据是否完整、是否走弱、是否异常波动、是否扎堆</li>
+          <li>落一份<b>可复核的报告</b>，写清数据日期、来源、缺失项</li>
+        </ul>
+      </div>
+      <div class="iobox in"><div class="lab">研究员不做的（合规边界）</div>
+        <ul>
+          <li>不下买入/卖出/目标价/仓位<b>指令</b>，只写观察条件</li>
+          <li>不凭记忆补行情；数字必须来自可追溯的数据</li>
+          <li>不把“没接入的数据”说成“暂无利空”</li>
+          <li>候选为空就是结论，<b>不改规则或日期</b>去找更好看的结果</li>
+          <li>不下单、不转账、不登录券商</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:10px">这套边界后面会原样变成 <b>guardrails 系统提示</b> 和 <b>AGENTS.md</b>——角色约束先于任何一次提示词。</div>
+  </section>
+
+  <!-- 11 The pipeline (real) -->
+  <section class="slide">
+    <div class="kicker">第二部分 · 流程</div>
+    <h2>盘后研究流水线：六个动作</h2>
+    <div class="flow">
+      <div class="step"><div class="t">① 看市场</div><div class="s">指数收在哪、涨跌家数、数据截止到哪天，决定进不进选股。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">② 按规则选股</div><div class="s">历史够、多头排列、涨幅适中、放量但不极端，取前 N 做候选。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">③ 个股研究</div><div class="s">把候选展开成研究卡，只摆事实，不补财务和新闻。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">④ 风险检查</div><div class="s">规则命中：缺数据移出重点，走弱/异常/扎堆/过期只警示。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">⑤ 出报告</div><div class="s">落 Markdown + JSON，写清日期、来源、缺失、免责。</div></div>
+    </div>
+    <div class="note" style="margin-top:14px"><b>关键特征</b>：每一步的输入都来自上一步、口径一致；任一步失败就停在该步，不往下编。这正好对应 Harness 里“同一个 <code>run_id</code> 贯穿五步”。</div>
+  </section>
+
+  <!-- 12 Section C divider -->
+  <section class="slide secdiv center">
+    <div class="big">C</div>
+    <div class="kicker" style="color:#e9e6ff">第三部分 · 重点</div>
+    <h1 style="margin-top:0">工作流 ↔ Harness 逐步映射</h1>
+    <p style="color:#eef">每一步讲：谁触发 · 输入什么 · 内部怎么算 · 输出什么 · 如何衔接下一步。</p>
+  </section>
+
+  <!-- 13 Big picture board -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 全景</div>
+    <h2>一次盘后研究的全景数据流</h2>
+    <div class="board">
+      <div class="lane">
+        <div class="pnode" style="background:#efeaff;border-color:#d7ccff"><strong>⌨️ /research</strong>command 插件</div>
+        <div class="pnode"><strong>🧠 Agent</strong>读 guardrails + skill</div>
+        <div class="pnode hub"><strong>🧰 run-store</strong>researchRunStore 服务 · Python 桥</div>
+      </div>
+      <div class="lane">
+        <div class="pnode"><strong>Context（能力层）</strong>systemPrompt: guardrails · skills: pipeline · commands: /research</div>
+        <div class="prow" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <div class="pnode"><strong>market-data</strong>get_market_snapshot</div>
+          <div class="pnode"><strong>screening</strong>screen_stocks</div>
+          <div class="pnode"><strong>research-report</strong>research / risk / report</div>
+        </div>
+        <div class="pnode" style="background:#fff6ec;border-color:#f0d3b0;color:#7a5417"><strong>🐍 Python · trader.cli</strong>读样本 → 清洗 → 指标 → 选股 → 研究卡 → 风险 → 渲染报告 ｜ SQLite <code>data/trader.sqlite</code> · <code>reports/&lt;date&gt;/&lt;run_id&gt;.md/.json</code></div>
+      </div>
+    </div>
+    <div class="chain" style="margin-top:12px">
+      <span class="c">工具插件 <b>不起进程</b></span><span class="arr">→</span>
+      <span class="c">inject <b>researchRunStore</b></span><span class="arr">→</span>
+      <span class="c">run-store <b>spawn</b> <code>python -m trader.cli</code></span><span class="arr">→</span>
+      <span class="c">stdout 一个 <b>JSON 信封</b></span><span class="arr">→</span>
+      <span class="c">schema 校验 → 回 Agent</span>
+    </div>
+  </section>
+
+  <!-- 14 Mapping table -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 映射总表</div>
+    <h2>研究员动作 ↔ 插件 ↔ Python</h2>
+    <table>
+      <tr><th>研究员动作</th><th>工具（插件）</th><th>CLI 子命令</th><th>Python 模块</th><th>落点</th></tr>
+      <tr><td>看市场</td><td>get_market_snapshot<br/><span class="muted small">market-data</span></td><td>market-snapshot</td><td>pipeline.run_daily</td><td>SQLite + processed.json</td></tr>
+      <tr><td>按规则选股</td><td>screen_stocks<br/><span class="muted small">screening</span></td><td>screen</td><td>screening.screener</td><td>回读 SQLite</td></tr>
+      <tr><td>个股研究</td><td>get_stock_research_data<br/><span class="muted small">research-report</span></td><td>stock-research</td><td>workflow + research.cards</td><td>save_research</td></tr>
+      <tr><td>风险检查</td><td>check_stock_risk<br/><span class="muted small">research-report</span></td><td>check-risk</td><td>risk.checks</td><td>save_risk</td></tr>
+      <tr><td>出报告</td><td>generate_daily_report<br/><span class="muted small">research-report</span></td><td>report</td><td>reporting.render</td><td>reports/*.md + *.json</td></tr>
+    </table>
+    <div class="warnbox" style="margin-top:10px"><b>一个反直觉点（下一张详讲）</b>：<code>get_market_snapshot</code> 其实在 Python 里就把<b>整条流水线</b>算完并落库了；后四步是按 <code>run_id</code> 回读/重渲染同一份 run。</div>
+  </section>
+
+  <!-- 15 Trigger 0: /research -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 0 步</div>
+    <h2><span class="stepno">0</span>触发：<code>/research [demo]</code></h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入</div>
+        <ul>
+          <li>用户在 UI 输入 <code>/research</code>，可选参数 <code>demo</code>（命令提示 <code>input.hint="[demo]"</code>）</li>
+          <li><code>rawInput</code> 为空 → 默认 <code>universe=demo</code></li>
+        </ul>
+        <div class="lab" style="margin-top:8px;color:var(--accent)">处理（command 插件）</div>
+        <ul>
+          <li>取 <code>FIXED_PROMPT</code>（shared/research-text.js）</li>
+          <li>拼 <code>…\nuniverse=demo。</code></li>
+          <li><code>agent.followup(createUserMessage(...))</code> 作为<b>新用户消息</b>送进会话</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出</div>
+        <ul>
+          <li>一句回执：“已按固定提示词开始盘后研究（universe=demo）”</li>
+          <li><b>不碰行情、不调 Python</b>——它只是“开工按钮”</li>
+        </ul>
+        <div class="lab" style="margin-top:8px;color:var(--warn)">如何衔接下一步</div>
+        <ul>
+          <li>固定提示词里写了“<b>加载 daily-stock-research</b>”</li>
+          <li>→ 命中文件系统 Skill，引导 Agent 按五步调工具</li>
+        </ul>
+      </div>
+    </div>
+    <pre><span class="c">// FIXED_PROMPT（节选）</span>
+加载 daily-stock-research。使用 fixture 数据，执行最近一个已冻结交易日的 A 股盘后研究。
+只引用工具返回的数字。如果工具失败，停止并说明错误码。不要给出买卖指令。</pre>
+  </section>
+
+  <!-- 16 Context load -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 0.5 步</div>
+    <h2><span class="stepno">½</span>Agent 读 Context：护栏 + 技能</h2>
+    <div class="io">
+      <div class="iobox proc"><div class="lab">systemPrompt：guardrails</div>
+        <ul>
+          <li>插件 <code>apply()</code> 时就把 <code>GUARDRAILS</code> 段插入系统提示</li>
+          <li>内容：不给买卖/目标价 · 数字只来自工具 JSON · <code>data_date</code> 不是“今天” · 空字段≠“暂无利空” · 空候选是合法结果</li>
+          <li><b>不注册任何工具</b>，纯改行为</li>
+        </ul>
+      </div>
+      <div class="iobox proc"><div class="lab">skills：stock-research-pipeline</div>
+        <ul>
+          <li>七步规程：快照失败即停、同一 <code>run_id</code> 贯穿、不研究候选外代码、摘要只复述观察条件</li>
+          <li>与磁盘 <code>daily-stock-research</code> <b>分开命名</b>避免互相遮蔽</li>
+        </ul>
+      </div>
+    </div>
+    <div class="okbox" style="margin-top:12px">于是 Agent 进入“研究员模式”：<b>必须按固定顺序调五个工具，只复述 JSON 里的数字。</b> 这一步没有 Python，只是上下文被插件改写过。</div>
+  </section>
+
+  <!-- 17 The bridge mechanism -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 衔接机制（贯穿五步）</div>
+    <h2>一次工具调用，TS 怎么过桥到 Python</h2>
+    <div class="chain">
+      <span class="c">工具 <b>execute()</b></span><span class="arr">→</span>
+      <span class="c">注入的 <b>store.xxx()</b></span><span class="arr">→</span>
+      <span class="c">runner <b>参数白名单校验</b></span><span class="arr">→</span>
+      <span class="c"><b>spawn</b> python</span><span class="arr">→</span>
+      <span class="c">CLI 子命令</span><span class="arr">→</span>
+      <span class="c">JSON 信封</span><span class="arr">→</span>
+      <span class="c"><b>accept() schema 校验</b></span><span class="arr">→</span>
+      <span class="c">renderEnvelope → 模型</span>
+    </div>
+    <pre><span class="c">// runner.js · runPython</span>
+spawn(python, [<span class="g">"-m"</span>, <span class="g">"trader.cli"</span>, ...command], {
+  cwd: projectRoot, shell: <span class="k">false</span>,
+  env: { ...env, <span class="y">PYTHONPATH</span>: projectRoot + <span class="g">"/python"</span> }
+});
+<span class="c">// 超时 → SIGKILL → TIMEOUT 信封；stderr 落 data/logs/</span>
+<span class="c">// stdout 必须 JSON.parse 成对象，否则塌缩 INTERNAL 信封</span></pre>
+    <div class="note" style="margin-top:8px"><b>要点</b>：工具插件零配置、零进程；一切失败都收敛成标准信封，<b>绝不把异常抛进 Agent 循环</b>。参数白名单（universe、run_id 格式、symbols 1–5 只、limit 1–10）在 TS 侧先挡一道。</div>
+  </section>
+
+  <!-- 18 Step 1 snapshot -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 1 步 · 看市场</div>
+    <h2><span class="stepno">1</span><code>get_market_snapshot</code>（真正的重计算）</h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入</div>
+        <ul>
+          <li><code>universe=demo</code>（必填，枚举 demo/csi300）</li>
+          <li><code>as_of?</code> 可选，默认用冻结样本日期，不许改日期“找好结果”</li>
+          <li>TS 侧执行 <code>market-snapshot --universe demo --data-mode fixture --json</code></li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出（data = market）</div>
+        <ul>
+          <li><b>run_id</b> = <code>research-YYYYMMDD-HHMMSS</code></li>
+          <li>指数点位、涨跌家数、<b>data_date</b>、warnings、source</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warnbox" style="margin-top:10px"><b>内部真相</b>：<code>_snapshot</code> 调 <code>pipeline.run_daily</code>，一口气做完：读 fixture → 校验日期 → 清洗日线 → 算 MA20/MA60/20日收益/量比 → <code>screen()</code> 选股 → 生成 <code>run_id</code> → <b>save_run 落 SQLite</b> → 顺带调 research/risk/report，<b>连研报文件都写盘了</b>。只是返回信封里只裁出 <code>market</code>。</div>
+    <div class="okbox" style="margin-top:8px"><b>衔接</b>：把 <code>run_id</code> 交给 Agent。若 <code>ok≠true</code>，skill 规定立即停、只报 <code>error.code</code>，不进选股。</div>
+  </section>
+
+  <!-- 19 Step 2 screen -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 2 步 · 按规则选股</div>
+    <h2><span class="stepno">2</span><code>screen_stocks</code></h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入</div>
+        <ul>
+          <li><b>run_id</b>（必填，来自第 1 步）</li>
+          <li><code>rule_set?</code> 仅接受 <code>trend_volume_v1</code></li>
+          <li><code>limit?</code> 1–10（展示上限，TS 侧切片）</li>
+        </ul>
+        <div class="lab" style="margin-top:6px;color:var(--accent)">规则 trend_volume_v1</div>
+        <ul>
+          <li>历史≥60；<code>close &gt; ma20 &gt; ma60</code>（多头排列）</li>
+          <li>20日收益 ∈ [5%, 40%]；量比 ∈ [1.2, 3.0]</li>
+          <li>按涨幅排序取前 10 做候选</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出</div>
+        <ul>
+          <li>candidates：symbol/name/industry/close/ma20/ma60/return_20d/volume_ratio/high_60d/distance_to_high_60d</li>
+          <li>candidate_count、eligible_count、excluded_counts、exclusions</li>
+          <li><b>候选为空是合法结果</b>（带 warning）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:8px"><b>衔接</b>：CLI <code>screen</code> 只 <code>load_run</code> 回读第 1 步已存的 screening，<b>不重新加载行情、不改日期</b>。规则阈值是可解释的演示规则，不是验证过的策略。</div>
+  </section>
+
+  <!-- 20 Step 3 research -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 3 步 · 个股研究</div>
+    <h2><span class="stepno">3</span><code>get_stock_research_data</code></h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入</div>
+        <ul>
+          <li><b>run_id</b>（必填）</li>
+          <li><code>symbols?</code> 1–5 只本次候选（6 位、不重复）；省略则展开<b>前 5 名</b></li>
+        </ul>
+        <div class="lab" style="margin-top:6px;color:var(--accent)">处理（build_cards）</div>
+        <ul>
+          <li><code>load_bars</code>+<code>add_indicators</code> 重建指标</li>
+          <li>算 <code>closes_above_ma20_ratio</code>（近 20 日站上 MA20 比例）</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出：研究卡</div>
+        <ul>
+          <li>价格、均线、动量、量能、距 60 日高点</li>
+          <li><code>valuation / news / fund_flow</code> <b>硬编码 null</b>（未接数据源）</li>
+          <li><code>missing_fields</code>、<code>unavailable_fields</code></li>
+          <li><code>save_research</code> 落库</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warnbox" style="margin-top:8px"><b>合规衔接</b>：空的三项是“未接入”，不是“暂无利空”；只摆候选内的事实，不写观点、不补财务新闻。</div>
+  </section>
+
+  <!-- 21 Step 4 risk -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 4 步 · 风险检查</div>
+    <h2><span class="stepno">4</span><code>check_stock_risk</code></h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入 / 处理</div>
+        <ul>
+          <li><b>run_id</b>（必填），不传代码/路径</li>
+          <li><code>risk.checks.evaluate</code> 逐候选 + 整体 run 跑规则</li>
+          <li>若有候选却没先做研究卡 → 报 “先调用 get_stock_research_data”</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出：规则命中（非卖出建议）</div>
+        <ul>
+          <li>🔴 <b>DATA_INCOMPLETE</b> → <b>block</b>（移出重点）</li>
+          <li>🟠 TREND_WEAKENING / ABNORMAL_MOVE</li>
+          <li>🟠 INDUSTRY_CONCENTRATION（前5名同业≥3）</li>
+          <li>🟠 STALE_SAMPLE（样本距今&gt;5 天）</li>
+          <li>产出 <code>blocked_symbols</code> / <code>focus_symbols</code>，<code>save_risk</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="okbox" style="margin-top:8px"><b>衔接</b>：<code>block</code> 只表示“移出重点研究”，<code>warn</code> 不是卖出。focus_symbols 进下一步报告的重点段。</div>
+  </section>
+
+  <!-- 22 Step 5 report -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 第 5 步 · 出报告</div>
+    <h2><span class="stepno">5</span><code>generate_daily_report</code></h2>
+    <div class="io">
+      <div class="iobox in"><div class="lab">输入 / 处理</div>
+        <ul>
+          <li><b>run_id</b>（必填）</li>
+          <li>从 SQLite 读回 run + cards + flags，组 context</li>
+          <li><code>reporting.render.write_report</code> 渲染两份文件</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">输出</div>
+        <ul>
+          <li><b>markdown_path</b> / <b>json_path</b>：<code>reports/&lt;data_date&gt;/&lt;run_id&gt;.md / .json</code></li>
+          <li>disclaimer、industry_distribution（<b>候选分布</b>，非板块排名）</li>
+          <li>focus_symbols / blocked_symbols</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warnbox" style="margin-top:8px"><b>表格数字全部由 Python 生成</b>，模型只能润色语言、不得改写数字。免责声明：仅用于演示研究流程，不构成投资建议、不触发任何交易。</div>
+    <div class="okbox" style="margin-top:6px"><b>收尾</b>：Agent 按 skill 第 7 步向用户摘要 data_date、市场环境、候选、重点研究、风险命中——观察条件只复述规则失效，不写成委托。</div>
+  </section>
+
+  <!-- 23 run_id thread -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 衔接的灵魂</div>
+    <h2>一个 <code>run_id</code> 怎么把五步焊在一起</h2>
+    <div class="chain">
+      <span class="c">① snapshot <b>生成</b> run_id + 落库</span><span class="arr">→</span>
+      <span class="c">② screen <b>load_run</b></span><span class="arr">→</span>
+      <span class="c">③ research <b>load_run</b>+save_research</span><span class="arr">→</span>
+      <span class="c">④ risk <b>load_risk/save_risk</b></span><span class="arr">→</span>
+      <span class="c">⑤ report <b>读齐</b>→渲染</span>
+    </div>
+    <div class="io" style="margin-top:12px">
+      <div class="iobox proc"><div class="lab">为什么必须同一个 run_id</div>
+        <ul>
+          <li>重数据（读样本+指标+选股）只在第 1 步算一次，落 SQLite</li>
+          <li>后面每步都是对<b>同一份案卷</b>的回读/补写，口径不会漂</li>
+          <li>这就是护栏反复强调“同一 run_id、不另传日期”的技术原因</li>
+        </ul>
+      </div>
+      <div class="iobox link"><div class="lab">持久化落点</div>
+        <ul>
+          <li>SQLite：<code>data/trader.sqlite</code>（runs / snapshots / screen_hits / bars / research / risk / report 表）</li>
+          <li>人读副本：<code>data/processed/&lt;date&gt;/&lt;run_id&gt;.json</code></li>
+          <li>报告：<code>reports/&lt;date&gt;/&lt;run_id&gt;.md / .json</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 24 Envelope contract -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 统一契约</div>
+    <h2>每一步都返回同一个 JSON 信封</h2>
+    <div class="io">
+      <div class="iobox out"><div class="lab">信封字段（contracts.envelope）</div>
+        <ul>
+          <li><code>ok</code> · <code>tool</code> · <code>run_id</code> · <code>data_date</code></li>
+          <li><code>generated_at</code>（上海时区）· <code>source</code>（provider/dataset/adjustment）</li>
+          <li><code>warnings[]</code> · <code>error{code,message,retryable}</code> · <code>data</code></li>
+        </ul>
+      </div>
+      <div class="iobox in"><div class="lab">两层校验</div>
+        <ul>
+          <li><b>Python 侧</b>：统一 <code>envelope()</code> / <code>TraderError</code>，错误码如 INVALID_ARGUMENT、DATA_QUALITY_FAILED、NO_CANDIDATES</li>
+          <li><b>TS 侧</b>：<code>accept(schema,...)</code> 用 JSON Schema 校验；不符就塌缩成 INTERNAL 信封，不进 Agent 循环</li>
+        </ul>
+      </div>
+    </div>
+    <pre><span class="c">// 失败也是合法信封，不抛异常</span>
+{ <span class="k">"ok"</span>: false, <span class="k">"tool"</span>: <span class="g">"screen_stocks"</span>, <span class="k">"run_id"</span>: null,
+  <span class="k">"error"</span>: { <span class="k">"code"</span>: <span class="g">"INVALID_ARGUMENT"</span>, <span class="k">"message"</span>: <span class="g">"run_id 必须来自上一步…"</span>, <span class="k">"retryable"</span>: false },
+  <span class="k">"data"</span>: null }</pre>
+  </section>
+
+  <!-- 25 failure handling -->
+  <section class="slide">
+    <div class="kicker">第三部分 · 失败与边界</div>
+    <h2>任一步失败，系统怎么“停而不编”</h2>
+    <div class="grid g3">
+      <div class="card"><h3>🛑 快照失败</h3><p>第 1 步 <code>ok≠true</code> → skill 要求停，只报 <code>error.code</code>，不进选股、不用记忆补行情。</p></div>
+      <div class="card"><h3>⏱ Python 超时</h3><p>runner 的 AbortController 到点 SIGKILL，丢弃不完整输出，回 <code>TIMEOUT</code> 信封（retryable）。</p></div>
+      <div class="card"><h3>🧱 schema 不符</h3><p>TS 的 <code>accept()</code> 校验失败 → INTERNAL 信封，绝不把坏数据喂给模型。</p></div>
+      <div class="card"><h3>📭 空候选</h3><p>合法结果：写明规则与样本范围，<b>不改规则或日期</b>重跑。</p></div>
+      <div class="card"><h3>🚫 越界请求</h3><p>guardrails + AGENTS.md：不下单/转账/登录券商，不输出买卖/目标价/仓位。</p></div>
+      <div class="card"><h3>🗂 写盘失败</h3><p>报告落盘 OSError → <code>REPORT_WRITE_FAILED</code>（retryable），带 run_id/data_date。</p></div>
+    </div>
+    <div class="note" style="margin-top:10px">三道防线：<b>Python 契约</b>（envelope/TraderError）· <b>TS 白名单+schema</b> · <b>模型约束</b>（guardrails/skill/AGENTS.md）。失败永远可见，不生成虚构行情。</div>
+  </section>
+
+  <!-- 26 Section D divider -->
+  <section class="slide secdiv center">
+    <div class="big">D</div>
+    <div class="kicker" style="color:#e9e6ff">第四部分</div>
+    <h1 style="margin-top:0">设计取舍、验证与演示</h1>
+    <p style="color:#eef">为什么这么分层，怎么证明它真的跑通。</p>
+  </section>
+
+  <!-- 27 Why this design -->
+  <section class="slide">
+    <div class="kicker">第四部分 · 取舍</div>
+    <h2>为什么是“插件 + 共享服务 + Python”</h2>
+    <div class="grid g2">
+      <div class="card"><h3>🐍 Python 计算，模型解释</h3><p>清洗、指标、筛选、风险、回测都是确定性函数。模型不心算价格均线，只解释工具已返回的结构化结果。</p></div>
+      <div class="card"><h3>🧰 服务是协作核心</h3><p>三个工具插件零配置、零进程，统一 inject <code>researchRunStore</code>；一个 run_id 串全程，数字不会前后对不上。</p></div>
+      <div class="card"><h3>🧩 四类扩展点各司其职</h3><p>tools 暴露能力、systemPrompt 立规矩、skills 给手册、commands 做开工按钮。拆成七个包演示“插件不只是注册工具”。</p></div>
+      <div class="card"><h3>🧱 Bundle 一层装好</h3><p>七个插件由一个 bundle 作为组合层装进 Profile；Profile 只 link 这一个 bundle，升级/复用干净。</p></div>
+    </div>
+    <div class="note" style="margin-top:10px">没有 <code>workflow.yaml</code>：业务工作流由 <b>Profile + 插件 + AGENTS.md + Skill</b> 共同定义，确定性计算绝不交给模型即兴写 JS。</div>
+  </section>
+
+  <!-- 28 Validation -->
+  <section class="slide">
+    <div class="kicker">第四部分 · 验证</div>
+    <h2>怎么证明它真的跑通</h2>
+    <div class="io">
+      <div class="iobox proc"><div class="lab">跨包集成测试</div>
+        <ul>
+          <li>真实 Cordis Context 挂载七个插件</li>
+          <li>断言：工具插件注入共享服务并注册全部工具</li>
+          <li>一个 run_id 跑通 快照→选股→个股→风险→报告</li>
+          <li>护栏进系统提示、技能进技能表、<code>/research</code> 触发固定提示词</li>
+        </ul>
+      </div>
+      <div class="iobox out"><div class="lab">命令</div>
+        <ul>
+          <li><code>dsh --profile trading-research --dump-config</code>（看见 bundle 组合层七条）</li>
+          <li><code>node --experimental-strip-types --test harness/plugins/test/*.mjs</code></li>
+          <li>CLI 独立验证：<code>python -m trader.cli market-snapshot --json</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="okbox" style="margin-top:10px">断网演示也成立：模型断开时，CLI 仍能生成 JSON 和报告——因为计算在 Python，不在模型。</div>
+  </section>
+
+  <!-- 29 Demo script -->
+  <section class="slide">
+    <div class="kicker">第四部分 · 现场怎么跑</div>
+    <h2>演示动线与看点</h2>
+    <div class="flow">
+      <div class="step"><div class="t">① 启动</div><div class="s"><code>dsh --profile trading-research --no-open --port 8787</code>；UI 把工作区指到本仓库。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">② /research</div><div class="s">看 Trajectory 里五个工具依次出现，带真实 run_id。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">③ 看数字</div><div class="s">data_date、候选表、风险命中全部来自工具 JSON。</div></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="t">④ 打开报告</div><div class="s"><code>reports/&lt;date&gt;/&lt;run_id&gt;.md</code>，核对表格数字一致。</div></div>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card small"><b>看点一</b><br/><span class="muted">工具名真实出现，不是模型口述行情</span></div>
+      <div class="card small"><b>看点二</b><br/><span class="muted">空候选/缺字段被如实标注，不编造</span></div>
+      <div class="card small"><b>看点三</b><br/><span class="muted">全程无买卖指令、无下单</span></div>
+    </div>
+  </section>
+
+  <!-- 30 Closing -->
+  <section class="slide cover center">
+    <div class="kicker">谢谢观看</div>
+    <h1>一句话开工，<br/>一条可追溯的研究流水线</h1>
+    <p class="lead">Profile 组装能力 · 一个共享服务串起一个 run_id · Python 计算 · 模型只解释。<br/>每一步输入输出清晰，上下触发可验证。</p>
+    <div class="chips">
+      <span class="pill">Profile · Bundle · Plugin · Context · Runtime · Agent</span>
+      <span class="pill">7 插件 · 4 扩展点 · 1 服务 · 1 run_id</span>
+    </div>
+    <div class="foot"><span>Q &amp; A</span><span class="r">研究仅用于演示，不构成投资建议</span></div>
+  </section>
+
+</div>
+
+<div class="hud">
+  <button class="btn" id="prev">‹ 上一页</button>
+  <div class="dots" id="dots"></div>
+  <button class="btn" id="next">下一页 ›</button>
+</div>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0;
+  var dots = document.getElementById('dots');
+  slides.forEach(function(_, k){
+    var b = document.createElement('button');
+    b.className = 'dot' + (k===0?' on':'');
+    b.setAttribute('aria-label','第'+(k+1)+'页');
+    b.addEventListener('click', function(){ show(k); });
+    dots.appendChild(b);
+  });
+  var dotEls = Array.prototype.slice.call(dots.children);
+  var counter = document.getElementById('counter');
+  var prog = document.getElementById('prog');
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+    dotEls.forEach(function(d,k){ d.classList.toggle('on', k===i); });
+    counter.textContent = (i+1) + ' / ' + slides.length;
+    prog.style.width = ((i)/(slides.length-1)*100) + '%';
+    var act = slides[i]; if(act){ act.scrollTop = 0; }
+  }
+  document.getElementById('prev').addEventListener('click', function(){ show(i-1); });
+  document.getElementById('next').addEventListener('click', function(){ show(i+1); });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(i+1); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(i-1); e.preventDefault(); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(slides.length-1); }
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+  });
+  var sx=null;
+  document.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(sx===null) return; var dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx)>50){ show(i + (dx<0?1:-1)); } sx=null;
+  }, {passive:true});
+  show(0);
+</script>
+</body>
+</html>
